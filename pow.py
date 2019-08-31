@@ -8,245 +8,48 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 import requests
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g, Flask,session
 
-
-class Blockchain:
-    def __init__(self):
-        self.chainName = ""
-        self.current_transactions = []
-        self.chain = []
-        self.globalchain = []
-        self.nodes = set()
-        self.globalchainindex = -1
-
-        # 创建创世块
-        self.new_block(1, time(), self.current_transactions,
-                       previous_hash='1', proof=100)
-    def setChainName(self, name):
-        self.chainName = name
-
-    def register_node(self, address: str) -> None:
-        """
-        Add a new node to the list of nodes
-
-        :param address: Address of node. Eg. 'http://192.168.0.5:5000'
-        """
-        parsed_url = urlparse(address)
-        print(parsed_url)
-        self.nodes.add(parsed_url.netloc)
-
-    def new_transaction(self, sender: str, recipient: str, amount: int) -> int:
-        """
-        生成新交易信息，信息将加入到下一个待挖的区块中
-
-        :param sender: Address of the Sender
-        :param recipient: Address of the Recipient
-        :param amount: Amount
-        :return: The index of the Block that will hold this transaction
-        """
-        self.current_transactions.append({
-            'sender': sender,
-            'recipient': recipient,
-            'amount': amount,
-        })
-
-        return self.last_block['index'] + 1
-
-    def new_block(self, index, timestamp, current_transactions,
-                  previous_hash, proof: int, gPointers = None):
-        """
-        生成新块
-
-        :param proof: The proof given by the Proof of Work algorithm
-        :param previous_hash: Hash of previous Block
-        :return: New Block
-        """
-        if gPointers:
-            block = {
-                'index': index,
-                'globalpointer':gPointers,
-                'timestamp': timestamp,
-                'transactions': current_transactions,
-                'proof': proof,
-                'previous_hash': previous_hash or self.hash(self.chain[-1]),
-            }
-        else :
-            block = {
-                'index': index,
-                'timestamp': timestamp,
-                'transactions': current_transactions,
-                'proof': proof,
-                'previous_hash': previous_hash or self.hash(self.chain[-1]),
-            }
-
-        # Reset the current list of transactions
-        self.current_transactions = []
-
-        self.chain.append(block)
-        return block
-
-    def new_candidate_block(self, index, timestamp, current_transactions,
-                            previous_hash):
-        """
-        生成新块
-
-        :param proof: The proof given by the Proof of Work algorithm
-        :param previous_hash: Hash of previous Block
-        :return: New Block
-        """
-        block = {
-            'index': index,
-            'timestamp': timestamp,
-            'transactions': current_transactions,
-            'previous_hash': previous_hash,
-            'proof': ''
-        }
-
-        return block
-
-    @property
-    def last_block(self) -> Dict[str, Any]:
-        return self.chain[-1]
-
-    @staticmethod
-    def hash(block: Dict[str, Any]) -> str:
-        """
-        生成块的 SHA-256 hash值
-
-        :param block: Block
-        """
-
-        # We must make sure that the Dictionary is Ordered, or we'll have inconsistent hashes
-        block_string = json.dumps(block, sort_keys=True).encode()
-        return hashlib.sha256(block_string).hexdigest()
-
-    @staticmethod
-    def get_hash_block_proof(block_tmp, proof):
-
-        block_tmp['proof'] = proof
-
-        guess_hash = Blockchain.hash(block_tmp)
-        return guess_hash
-
-    @staticmethod
-    def valid_proof(block_tmp, proof: int) -> bool:
-        """
-        验证证明: 是否hash(last_proof, proof)以4个0开头
-
-        :param last_proof: Previous Proof
-        :param proof: Current Proof
-        :return: True if correct, False if not.
-        """
-        # guess = f'{last_proof}{proof}'.encode()
-        # guess = (str(block_tmp) + str(proof)).encode()
-        # guess_hash = hashlib.sha256(guess).hexdigest()
-        # return guess_hash[:4] == "0000"
-
-        guess_hash = Blockchain.get_hash_block_proof(block_tmp, proof)
-        return guess_hash[:3] == "000"
-
-    def proof_of_work(self, block_tmp) -> int:
-        """
-        简单的工作量证明:
-         - 查找一个 p 使得 hash 以4个0开头
-        """
-
-        proof = 0
-        while self.valid_proof(block_tmp, proof) is False:
-            proof += 1
-
-        return proof
-
-    def valid_chain(self, chain: List[Dict[str, Any]]) -> bool:
-        """
-        Determine if a given blockchain is valid
-
-        :param chain: A blockchain
-        :return: True if valid, False if not
-        """
-
-        last_block = chain[0]
-        current_index = 1
-
-        while current_index < len(chain):
-            block = chain[current_index]
-            # print(f'{last_block}')
-            # print(f'{block}')
-            print(last_block)
-            print(block)
-            print("\n-----------\n")
-            # Check that the hash of the block is correct
-            if block['previous_hash'] != self.hash(last_block):
-                return False
-
-            # Check that the Proof of Work is correct
-            block_tmp = self.new_candidate_block(block['index'],
-                                                 block['timestamp'],
-                                                 block['transactions'],
-                                                 block['previous_hash'])
-
-            if not self.valid_proof(block_tmp, block['proof']):
-                return False
-            
-            last_block = block
-            current_index += 1
-
-        return True
-
-    def resolve_conflicts(self) -> bool:
-        """
-        共识算法解决冲突
-        使用网络中最长的链.
-
-        :return:  如果链被取代返回 True, 否则为False
-        """
-
-        neighbours = self.nodes
-        new_chain = None
-
-        # We're only looking for chains longer than ours
-        max_length = len(self.chain)
-
-        # Grab and verify the chains from all the nodes in our network
-        for node in neighbours:
-            # response = requests.get(f'http://{node}/chain')
-            try:
-                response = requests.get('http://%s/chain' % (node))
-
-                if response.status_code == 200:
-                    length = response.json()['length']
-                    chain = response.json()['chain']
-
-                    # Check if the length is longer and the chain is valid
-                    if length > max_length and self.valid_chain(chain):
-                        max_length = length
-                        new_chain = chain
-
-            except Exception as e:
-                print(e)
-
-        # Replace our chain if we discovered a new, valid chain longer than ours
-        if new_chain:
-            self.chain = new_chain
-            return True
-
-        return False
+import levevdbapi
+# import leveldb
+import os
+from blockchain import blockchain
 
 
 # Instantiate the Node
 app = Flask(__name__)
-
+# app.config['SECRET_KEY'] = os.urandom(24)
+# print(id(blockchain))
 # Generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
 
 # Instantiate the Blockchain
-blockchain = Blockchain()
+# db = levevdbapi.LevelDB()
 
+# if db not in g:
+#     g.db = levevdbapi.LevelDB()
+
+
+# if 'username' not in session:
+   
+    # session['username'] = 'liefyuan'
 
 @app.route('/')
 def hello_world():
-    return 'Hello, this is your first blockchain!'
+    # print(session.get("11111111"))
+    # if not session.get("blockchain"):
+    #     session['blockchain'] = Blockchain(levevdbapi.LevelDB())
+    # g.a = "111"
+    # session["a"] = {"a":1}
+    return 'Hello, this is your first blockchain!' 
+
+@app.route('/test')
+def test():
+    # return str(session.get('a')["a"])
+    # a = app.app_context()
+    # a.push()
+    print(g.a)
+    return "haha"
 
 @app.route('/getLastHash', methods=['GET'])
 def get_last_hash(): 
@@ -428,5 +231,8 @@ if __name__ == '__main__':
     config = json.load(open('./config/' + args.config+'.json', 'r'))
     ip = config['ip']
     port = config['port']
-
+    # print("1111111111111111111")
+    # db = leveldb.LevelDB('./db')
+    # app.app_context().push()
+    # app.config['SECRET_KEY'] = os.urandom(24)
     app.run(host=ip, port=port,debug=True)
