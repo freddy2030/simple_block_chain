@@ -12,7 +12,7 @@ from levevdbapi import mleveldb
 # import leveldb
 import os
 
-
+TRANSCTIONS_POOL_KEY = "transactions_pool"
 # def initBlockChain(self):
 #         if self.db:
 #             if not self.db.getValue("index"):
@@ -25,9 +25,9 @@ class Blockchain:
     def __init__(self, db):
         self.db = db
         self.chainName = ""
-        self.current_transactions = []
-        self.chain = []
-        self.globalchain = []
+        # self.current_transactions = []
+        # self.chain = []
+        # self.globalchain = []
         self.nodes = set()
         self.globalchainindex = -1
         self.index = -1
@@ -71,13 +71,28 @@ class Blockchain:
         :param amount: Amount
         :return: The index of the Block that will hold this transaction
         """
-        self.current_transactions.append({
+        new_transactions = {
             'sender': sender,
             'recipient': recipient,
             'amount': amount,
-        })
+        }
+        
+        new_transactions_key = self.hash( new_transactions )
 
-        return self.last_block['index'] + 1
+        self.db.putJson(new_transactions_key, new_transactions)
+
+        transactions_pool = self.db.getValue( TRANSCTIONS_POOL_KEY )
+
+        transactions_pool['pool'].append( new_transactions_key )
+
+
+        return new_transactions_key
+
+    def get_transaction_from_hash(self, mHash):
+        return self.db.getValue( mHash )
+    
+    def get_transactions_pool(self):
+        return self.db.getValue( TRANSCTIONS_POOL_KEY )
 
     def get_block_from_hash(self, mHash ):
         return self.db.getValue( mHash )
@@ -137,14 +152,9 @@ class Blockchain:
 
             self.db.putJson(gBlockInfoKey, gBlockInfo)
         
-        
-
-        
-        
-        pass
 
     def new_block(self, index, timestamp, current_transactions,
-                  previous_hash, proof, previous_g_hash, gPointers = None, gIndex = None):
+                  previous_hash, proof, previous_g_hash, gPointers = None, gIndex = 0):
         """
         生成新块
 
@@ -165,6 +175,7 @@ class Blockchain:
         # else :
         block = {
             'index': index,
+            'gIndex': gIndex,
             'timestamp': timestamp,
             'transactions': current_transactions,
             'proof': proof,
@@ -172,9 +183,9 @@ class Blockchain:
             'previous_g_hash': previous_g_hash or self.hash(self.last_gblock)
         }
         
-        if gPointers and gIndex:
+        if gPointers:
             block['globalpointer'] = gPointers
-            block['gIndex'] = gIndex
+
 
         # Reset the current list of transactions
         # self.current_transactions = []
@@ -185,8 +196,8 @@ class Blockchain:
         # self.chain.append(block)
         return block
 
-    def new_candidate_block(self, index, gIndex, timestamp, current_transactions,
-                            previous_hash, previous_g_hash):
+    def new_candidate_block(self, index, timestamp, current_transactions,
+                            previous_hash, previous_g_hash, gIndex = 0):
         """
         生成新块
 
@@ -203,6 +214,7 @@ class Blockchain:
             'previous_g_hash': previous_g_hash,
             'proof': ''
         }
+
 
         return block
 
@@ -237,13 +249,6 @@ class Blockchain:
 
     @staticmethod
     def valid_proof(block_tmp, proof: int) -> bool:
-        """
-        验证证明: 是否hash(last_proof, proof)以4个0开头
-
-        :param last_proof: Previous Proof
-        :param proof: Current Proof
-        :return: True if correct, False if not.
-        """
         # guess = f'{last_proof}{proof}'.encode()
         # guess = (str(block_tmp) + str(proof)).encode()
         # guess_hash = hashlib.sha256(guess).hexdigest()
