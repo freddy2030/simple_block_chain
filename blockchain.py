@@ -8,7 +8,7 @@ from uuid import uuid4
 import requests
 # from flask import Flask, jsonify, request, g, Flask,session
 
-from levevdbapi import mleveldb
+from leveldbapi import mleveldb
 # import leveldb
 import os
 
@@ -98,7 +98,7 @@ class Blockchain:
         return self.db.getValue( mHash )
     
     def get_block_from_index(self, index):
-        if index == -1:
+        if index <= 0:
             return 0
         blockInfoKey = "block-" + str( index )
         blockInfo = self.db.getValue( blockInfoKey )
@@ -106,14 +106,31 @@ class Blockchain:
         block = self.db.getValue( mHash )
         return block
 
-    def get_gblock_from_index(self, index):
-        if index == -1:
+    def get_cur_gblock_from_index(self, index):
+        if index <= 0:
             return 0
         gblockInfoKey = "gblock-" + str( index )
         gblockInfo = self.db.getValue( gblockInfoKey )
         mHash = gblockInfo["curBlock"]
         block = self.db.getValue( mHash )
         return block
+    
+    def get_all_gblock_from_index(self, index):
+        if index <= 0:
+            return 0
+        gblockInfoKey = "gblock-" + str( index )
+        gblockInfo = self.db.getValue( gblockInfoKey )
+        pool = gblockInfo["blockpool"]
+        print( pool )
+        blockSum = {
+            "count": len( pool ),
+            "blocks": []
+        }
+        for blockHash in pool:
+            blockSum["blocks"].append( self.get_block_from_hash( blockHash ))
+
+        return blockSum
+
 
     def submit_block(self, block): 
         # self.db.putJson(mHash, block)
@@ -224,7 +241,7 @@ class Blockchain:
     
     @property
     def last_gblock(self):
-        return self.get_gblock_from_index( self.index )
+        return self.get_cur_gblock_from_index( self.index )
 
     @staticmethod
     def hash(block: Dict[str, Any]) -> str:
@@ -341,7 +358,7 @@ class Blockchain:
 
         # Replace our chain if we discovered a new, valid chain longer than ours
         if new_chain:
-            self.chain = new_chain
+            self.chain = new_chain 
             return True
 
         return False
@@ -357,6 +374,6 @@ a = blockchain.new_block(1, time(), [], previous_hash='1', proof=100, gPointers=
 # print(blockchain.get_gblock_from_index(1))
 
 a = {"a":1}
-blockchain.test(a)
-print(a)
+# blockchain.test(a)
+print(blockchain.get_all_gblock_from_index(1))
 
