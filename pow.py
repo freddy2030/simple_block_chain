@@ -10,7 +10,7 @@ from uuid import uuid4
 import requests
 from flask import Flask, jsonify, request, g, Flask,session
 
-import levevdbapi
+# import levevdbapi
 # import leveldb
 import os
 from blockchain import blockchain
@@ -81,23 +81,26 @@ def setName():
 def mine():
     # 给工作量证明的节点提供奖励.
     # 发送者为 "0" 表明是新挖出的币
-    blockchain.new_transaction(
-        sender="0",
-        recipient=node_identifier,
-        amount=1,
-    )
+    # blockchain.new_transaction(
+    #     sender="0",
+    #     recipient=node_identifier,
+    #     amount=1,
+    # )
 
     # 生成候选区块
-    index = len(blockchain.chain) + 1
+    index = blockchain.index + 1
+    gindex = blockchain.globalchainindex + 1
     timestamp = time()
-    current_transactions = blockchain.current_transactions
+    current_transactions = blockchain.get_transactions_pool()
     last_block = blockchain.last_block
-    previous_hash = blockchain.hash(last_block)
-
+    previous_hash = blockchain.hash( last_block )
+    last_g_block = blockchain.last_gblock
+    previous_g_hash = blockchain.hash( last_g_block )
+    
     block_tmp = blockchain.new_candidate_block(index,
                                                timestamp,
                                                current_transactions,
-                                               previous_hash)
+                                               previous_hash, gIndex = gindex, previous_g_hash = previous_g_hash)
 
     # 完成工作量证明
     proof = blockchain.proof_of_work(block_tmp)
@@ -114,15 +117,15 @@ def mine():
                 # print(mhash.json()['hash'])
                 gPointer.append(mhash.json()['hash'])
     
-        print("xhxhxhxhxh",gPointer)
+        # print("xhxhxhxhxh",gPointer)
         block = blockchain.new_block(index, timestamp, current_transactions,
                                  previous_hash, proof, None)
         payload = json.dumps({"block":block})
         for pinName in pinChain:
             requests.post("http://%s/addGlobalBlock" % pinChain[pinName][0], data = payload)
 
-        blockchain.globalchain.append(block)
-        blockchain.globalchainindex += 1
+        blockchain.submit_global_block( block )
+        # blockchain.globalchainindex += 1
         response = {
             'message': "New Global Block",
             'index': block['index'],
@@ -135,7 +138,7 @@ def mine():
         }
     else :
         block = blockchain.new_block(index, timestamp, current_transactions,
-                                 previous_hash, proof, None)
+                                 previous_hash, proof, previous_g_hash, gIndex=gindex)
         response = {
             'message': "New Block Forged",
             'index': block['index'],

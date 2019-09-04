@@ -13,13 +13,23 @@ from leveldbapi import mleveldb
 import os
 
 TRANSCTIONS_POOL_KEY = "transactions_pool"
-# def initBlockChain(self):
-#         if self.db:
-#             if not self.db.getValue("index"):
-#                 print("no block chain")
-#         else:
-#             raise Exception("ERROR: no db !!!")
 
+def initBlockChain(self):
+    index = 1
+    while(1):
+        key = "block-" + str(index)
+        if not self.db.getValue(key):
+            self.index = index -1
+            break
+        index += 1
+    
+    gindex = 1
+    while(1):
+        key = "gblock-" + str(gindex)
+        if not self.db.getValue(key):
+            self.globalchainindex = gindex -1
+            break
+        gindex += 1
 
 class Blockchain:
     def __init__(self, db):
@@ -33,7 +43,7 @@ class Blockchain:
         self.index = -1
         
 
-        # initBlockChain(self)
+        initBlockChain(self)
         # 创建创世块
         # self.new_block(1, time(), self.current_transactions,
         #                previous_hash='1', proof=100)
@@ -48,6 +58,12 @@ class Blockchain:
         # del(block["a"])
         print(block)
 
+  
+        # if self.db:
+        #     if not self.db.getValue("index"):
+        #         print("no block chain")
+        # else:
+        #     raise Exception("ERROR: no db !!!")
 
     def setChainName(self, name):
         self.chainName = name
@@ -124,27 +140,53 @@ class Blockchain:
     
     def get_all_gblock_from_index(self, index):
         if index <= 0:
-            return 0
+            return False
         gblockInfoKey = "gblock-" + str( index )
         gblockInfo = self.db.getValue( gblockInfoKey )
-        pool = gblockInfo["blockpool"]
-        print( pool )
-        blockSum = {
-            "count": len( pool ),
-            "blocks": []
-        }
-        for blockHash in pool:
-            blockSum["blocks"].append( self.get_block_from_hash( blockHash ))
+        if gblockInfo:
+            pool = gblockInfo["blockpool"]
+            print( pool )
+            blockSum = {
+                "count": len( pool ),
+                "blocks": {}
+            }
+            for blockHash in pool:
+                blockSum["blocks"][blockHash] = self.get_block_from_hash( blockHash )
+            return blockSum
+        return None
+    
+    def get_all_block_from_index(self, index):
+        if index <= 0:
+            return False
 
-        return blockSum
+        blockInfoKey = "block-" + str( index )
+        blockInfo = self.db.getValue( blockInfoKey )
+        if blockInfo:
+            pool = blockInfo["blockpool"]
+            print( pool )
+            blockSum = {
+                "count": len( pool ),
+                "blocks": {}
+            }
+            for blockHash in pool:
+                blockSum["blocks"][blockHash] = self.get_block_from_hash( blockHash )
+            return blockSum
+        return None
 
-
-    def submit_block(self, block): 
-        # self.db.putJson(mHash, block)
-        # self.db.putJson(index, {"hash":mHash})
+    def submit_block(self, block):
         mHash = self.hash(block)
+       
+        if "index" not in block:
+            return False
         index = block['index']
-
+        
+        if index != 1:
+            beforeBlockInfo = self.get_all_gblock_from_index( index - 1 )
+            if beforeBlockInfo:
+                beforeBlockPool = beforeBlockInfo["blocks"]
+                if mHash not in beforeBlockPool:
+                    return False
+       
         blockInfoKey = "block-" + str(index)
         blockInfo = self.db.getValue( blockInfoKey )
         
@@ -158,24 +200,56 @@ class Blockchain:
             blockInfo["blockpool"].append( mHash )
         
         self.db.putJson(blockInfoKey, blockInfo)
+         
+        return True
+
+    def submit_global_block(self, block): 
+        # self.db.putJson(mHash, block)
+        # self.db.putJson(index, {"hash":mHash})
+        mHash = self.hash(block)
+       
+        if "gIndex" not in block:
+            return False
+        index = block['gIndex']
+        if index != 1:
+            beforeBlockInfo = self.get_all_gblock_from_index( index - 1 )
+            if beforeBlockInfo:
+                beforeBlockPool = beforeBlockInfo["blocks"]
+                if mHash not in beforeBlockPool:
+                    return False
+
+        gBlockInfoKey = "gblock-" + str(index)
+        gBlockInfo = self.db.getValue( gBlockInfoKey )
+        
+        if not gBlockInfo:
+            gBlockInfo = {
+                "index": index,
+                "curBlock": mHash,
+                "blockpool": [ mHash ]
+            }
+        else:
+            gBlockInfo["blockpool"].append(mHash) 
+
+        self.db.putJson(gBlockInfoKey, gBlockInfo)
         self.db.putJson(mHash, block)
         
-        if "gIndex" in block:
-            gIndex = block['gIndex']
-            gBlockInfoKey = "gblock-" + str(gIndex)
-            gBlockInfo = self.db.getValue( gBlockInfoKey )
-           
-            if not gBlockInfo:
-                gBlockInfo = {
-                    "index": gIndex,
-                    "curBlock": mHash,
-                    "blockpool": [ mHash ]
-                }
-            else:
-                gBlockInfo["blockpool"].append(mHash) 
-
-            self.db.putJson(gBlockInfoKey, gBlockInfo)
+        return True
+        # blockInfoKey = "block-" + str(index)
+        # blockInfo = self.db.getValue( blockInfoKey )
         
+        # if not blockInfo:
+        #     blockInfo = {
+        #         "index": index,
+        #         "curBlock": mHash,
+        #         "blockpool": [ mHash ]
+        #     }
+        # else:
+        #     blockInfo["blockpool"].append( mHash )
+        
+        # self.db.putJson(blockInfoKey, blockInfo)
+        
+        
+    
 
     def new_block(self, index, timestamp, current_transactions,
                   previous_hash, proof, previous_g_hash, gPointers = None, gIndex = 0):
@@ -203,8 +277,8 @@ class Blockchain:
             'timestamp': timestamp,
             'transactions': current_transactions,
             'proof': proof,
-            'previous_hash': previous_hash or self.hash(self.last_block),
-            'previous_g_hash': previous_g_hash or self.hash(self.last_gblock)
+            'previous_hash': previous_hash ,
+            'previous_g_hash': previous_g_hash 
         }
         
         if gPointers:
@@ -334,13 +408,15 @@ class Blockchain:
     def set_longest_global_block_chain(self): #----------------------------------------
         maxGlobalHeight = self.globalchainindex
         # maxHeight = self.index
-
-        for index in range(1, maxGlobalHeight + 1 ):
+        # globalBlockHash = self.hash( self.last_gblock )
+        preGlobalBlockHash = self.get_cur_gblock_from_index( maxGlobalHeight )["previous_g_hash"]
+        for index in range(1, maxGlobalHeight )[::-1]:
             globalBlockInfo = self.get_all_gblock_from_index( index )
+            globalBlockInfo["curBlock"] = preGlobalBlockHash
+            preGlobalBlock = self.get_cur_gblock_from_index( index )
+            if preGlobalBlock:
+                preGlobalBlockHash = preGlobalBlock["previous_g_hash"]
 
-            pass
-
-        pass
     
     def set_longest_block_chain_from_certain_block(self, mHash):
         
@@ -349,6 +425,7 @@ class Blockchain:
 blockchain = Blockchain( mleveldb ) 
 
 a = blockchain.new_block(1, time(), [], previous_hash='1', proof=100, gPointers={"1":1}, gIndex=1, previous_g_hash="1")#{"A":{"index":1,"hash":"233333"}}
+# blockchain.submit_global_block(a)
 # print(a)
 # blockchain.submit_block(a)
 # print(blockchain.last_block)
@@ -357,5 +434,9 @@ a = blockchain.new_block(1, time(), [], previous_hash='1', proof=100, gPointers=
 
 a = {"a":1}
 # blockchain.test(a)
-print(blockchain.get_all_gblock_from_index(1))
-
+# print(blockchain.get_all_gblock_from_index(1))
+# print(blockchain.get_block_from_index(1))
+# print(blockchain.index)
+# print(blockchain.globalchainindex)
+print( blockchain.db.getValue("gblock-1"))
+print( blockchain.db.getValue("block-1"))
