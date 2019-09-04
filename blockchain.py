@@ -31,7 +31,8 @@ class Blockchain:
         self.nodes = set()
         self.globalchainindex = -1
         self.index = -1
-    
+        
+
         # initBlockChain(self)
         # 创建创世块
         # self.new_block(1, time(), self.current_transactions,
@@ -98,13 +99,19 @@ class Blockchain:
         return self.db.getValue( mHash )
     
     def get_block_from_index(self, index):
-        if index <= 0:
-            return 0
+        blockInfo = self.get_block_info_from_index( index )
+        if blockInfo:
+            mHash = blockInfo["curBlock"]
+            block = self.db.getValue( mHash )
+            return block
+        return None
+
+    def get_block_info_from_index(self, index):
         blockInfoKey = "block-" + str( index )
         blockInfo = self.db.getValue( blockInfoKey )
-        mHash = blockInfo["curBlock"]
-        block = self.db.getValue( mHash )
-        return block
+        if blockInfo:
+            return blockInfo
+        return None
 
     def get_cur_gblock_from_index(self, index):
         if index <= 0:
@@ -324,45 +331,20 @@ class Blockchain:
 
         return True
 
-    def resolve_conflicts(self) -> bool: #----------------------------------------
-        """
-        共识算法解决冲突
-        使用网络中最长的链.
+    def set_longest_global_block_chain(self): #----------------------------------------
+        maxGlobalHeight = self.globalchainindex
+        # maxHeight = self.index
 
-        :return:  如果链被取代返回 True, 否则为False
-        """
+        for index in range(1, maxGlobalHeight + 1 ):
+            globalBlockInfo = self.get_all_gblock_from_index( index )
 
-        neighbours = self.nodes
-        new_chain = None
+            pass
 
-        # We're only looking for chains longer than ours
-        max_length = len(self.chain)
-
-        # Grab and verify the chains from all the nodes in our network
-        for node in neighbours:
-            # response = requests.get(f'http://{node}/chain')
-            try:
-                response = requests.get('http://%s/chain' % (node))
-
-                if response.status_code == 200:
-                    length = response.json()['length']
-                    chain = response.json()['chain']
-
-                    # Check if the length is longer and the chain is valid
-                    if length > max_length and self.valid_chain(chain):
-                        max_length = length
-                        new_chain = chain
-
-            except Exception as e:
-                print(e)
-
-        # Replace our chain if we discovered a new, valid chain longer than ours
-        if new_chain:
-            self.chain = new_chain 
-            return True
-
-        return False
-
+        pass
+    
+    def set_longest_block_chain_from_certain_block(self, mHash):
+        
+        pass
 
 blockchain = Blockchain( mleveldb ) 
 
