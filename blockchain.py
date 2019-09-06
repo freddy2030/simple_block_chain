@@ -109,6 +109,11 @@ class Blockchain:
         return self.db.getValue( mHash )
     
     def get_transactions_pool(self):
+        return ({
+            "sender":"0",
+            "recipient":"ffffffffff",
+            "amount":1
+        })
         return self.db.getValue( TRANSCTIONS_POOL_KEY )
 
     def get_block_from_hash(self, mHash ):
@@ -128,7 +133,14 @@ class Blockchain:
         if blockInfo:
             return blockInfo
         return None
-
+    
+    def get_gblock_info_from_index(self, index):
+        gBlockInfoKey = "gblock-" + str( index )
+        gBlockInfo = self.db.getValue( gBlockInfoKey )
+        if gBlockInfo:
+            return gBlockInfo
+        return None
+        
     def get_cur_gblock_from_index(self, index):
         if index <= 0:
             return 0
@@ -232,7 +244,7 @@ class Blockchain:
 
         self.db.putJson(gBlockInfoKey, gBlockInfo)
         self.db.putJson(mHash, block)
-        
+         
         return True
         # blockInfoKey = "block-" + str(index)
         # blockInfo = self.db.getValue( blockInfoKey )
@@ -411,16 +423,49 @@ class Blockchain:
         # globalBlockHash = self.hash( self.last_gblock )
         preGlobalBlockHash = self.get_cur_gblock_from_index( maxGlobalHeight )["previous_g_hash"]
         for index in range(1, maxGlobalHeight )[::-1]:
-            globalBlockInfo = self.get_all_gblock_from_index( index )
+            globalBlockInfo = self.get_gblock_info_from_index( index )
             globalBlockInfo["curBlock"] = preGlobalBlockHash
-            preGlobalBlock = self.get_cur_gblock_from_index( index )
-            if preGlobalBlock:
-                preGlobalBlockHash = preGlobalBlock["previous_g_hash"]
+            self.change_gblock_info( globalBlockInfo )
+            curGlobalBlock = self.get_cur_gblock_from_index( index )
+            if curGlobalBlock:
+                preGlobalBlockHash = curGlobalBlock["previous_g_hash"]
 
     
     def set_longest_block_chain_from_certain_block(self, mHash):
-        
-        pass
+        certainBlock = self.get_block_from_hash( mHash )
+        preBlockHash = mHash
+        if certainBlock:
+            certainIndex = certainBlock["index"]
+            for index in range(1, certainIndex)[::-1]:
+                blockInfo = self.get_block_info_from_index( index )
+                blockInfo["curBlock"] = preBlockHash
+                self.change_block_info( blockInfo )
+                curBlock = self.get_block_from_index( index )
+                if curBlock:
+                    preBlockHash = curBlock["previous_hash"] 
+            
+            preBlockHash = mHash
+            for index in range(certainIndex + 1, self.index + 1 ):
+                blockInfo = self.get_block_info_from_index( index )
+                blockPool = self.get_all_block_from_index( index )["blocks"]
+                for blockHash in blockPool:
+                    block = self.get_block_from_hash(blockHash)
+                    if block["pervious_hash"] == preBlockHash:
+                        blockInfo["curBlock"] = blockHash
+                        self.change_block_info( blockInfo )
+                        preBlockHash = blockHash
+
+            
+
+    def change_block_info(self, blockInfo):
+        index = blockInfo["index"]
+        key = "block-" + index
+        self.db.putJson(key, blockInfo)
+    
+    def change_gblock_info(self, gblockInfo):
+        index = gblockInfo["index"]
+        key = "gblock-" + index
+        self.db.putJson(key, blockInfo)
 
 blockchain = Blockchain( mleveldb ) 
 
@@ -438,5 +483,8 @@ a = {"a":1}
 # print(blockchain.get_block_from_index(1))
 # print(blockchain.index)
 # print(blockchain.globalchainindex)
-print( blockchain.db.getValue("gblock-1"))
-print( blockchain.db.getValue("block-1"))
+print( blockchain.get_all_block_from_index(1))
+print( blockchain.get_all_block_from_index(2))
+print( blockchain.get_all_block_from_index(3))
+print( blockchain.get_all_gblock_from_index(1))
+print( blockchain.get_all_gblock_from_index(2))
