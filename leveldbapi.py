@@ -22,7 +22,8 @@ class LevelDB:
     def getValue(self, key):
         keyByte = str.encode(key)
         try:
-            value = leveldb.LevelDB(self.path).Get(keyByte)
+            db = leveldb.LevelDB(self.path)
+            value = db.Get(keyByte)
         except KeyError:
             print("key: " + key + "  is not exit")
             return None
@@ -32,14 +33,18 @@ class LevelDB:
             valueStr = value.decode('utf-8')
             valueJson = json.loads(valueStr)
             return valueJson
+        finally:
+            del(db)
 
 
     def putJson(self, key, block):
         keyByte = str.encode(key)
         blockStr = json.dumps(block)
         blockByte = str.encode(blockStr)
-        leveldb.LevelDB(self.path).Put(keyByte, blockByte)
+        db = leveldb.LevelDB(self.path)
+        db.Put(keyByte, blockByte)
         print("save success  " + key)
+        del(db)
 
 
 mleveldb = LevelDB()
