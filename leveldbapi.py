@@ -49,6 +49,9 @@ class LevelDB:
 
 mleveldb = LevelDB()
 
+# mleveldb.putJson("test1", {"name":"123"})
+# mleveldb.getValue("block-1")
+
 
 # mleveldb = None
 
