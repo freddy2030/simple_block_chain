@@ -1,0 +1,21 @@
+{
+    "name":"gblock-x ( 1<= x < n)",
+    "data":
+        {
+            "index" : 1, 
+            "gindex" : 1 
+        },
+    "确认区块": {
+        "A链" : 
+            [
+                "AADASDADAD",
+                "CCCCCCCC"
+            ],
+        "B链" :
+            [
+                "cccccc",
+                "BBBBB"
+            ]
+    }
+}
+

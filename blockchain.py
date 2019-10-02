@@ -220,9 +220,9 @@ class Blockchain:
         # self.db.putJson(index, {"hash":mHash})
         mHash = self.hash(block)
        
-        if "gIndex" not in block:
+        if "gindex" not in block:
             return False
-        index = block['gIndex']
+        index = block['gindex']
         if index != 1:
             beforeBlockInfo = self.get_all_gblock_from_index( index - 1 )
             if beforeBlockInfo:
@@ -264,7 +264,7 @@ class Blockchain:
     
 
     def new_block(self, index, timestamp, current_transactions,
-                  previous_hash, proof, previous_g_hash, gPointers = None, gIndex = 0):
+                  previous_hash, proof, previous_g_hash, gPointers = None, gindex = 0):
         """
         生成新块
 
@@ -285,7 +285,7 @@ class Blockchain:
         # else :
         block = {
             'index': index,
-            'gIndex': gIndex,
+            'gindex': gindex,
             'timestamp': timestamp,
             'transactions': current_transactions,
             'proof': proof,
@@ -307,7 +307,7 @@ class Blockchain:
         return block
 
     def new_candidate_block(self, index, timestamp, current_transactions,
-                            previous_hash, previous_g_hash, gIndex = 0):
+                            previous_hash, previous_g_hash, gindex = 0):
         """
         生成新块
 
@@ -317,7 +317,7 @@ class Blockchain:
         """
         block = {
             'index': index,
-            'gIndex': gIndex,
+            'gindex': gindex,
             'timestamp': timestamp,
             'transactions': current_transactions,
             'previous_hash': previous_hash,
@@ -403,7 +403,7 @@ class Blockchain:
 
             # Check that the Proof of Work is correct
             block_tmp = self.new_candidate_block(block['index'],
-                                                 block['gIndex'],
+                                                 block['gindex'],
                                                  block['timestamp'],
                                                  block['transactions'],
                                                  block['previous_hash'],
@@ -469,7 +469,7 @@ class Blockchain:
 
 blockchain = Blockchain( mleveldb ) 
 
-a = blockchain.new_block(1, time(), [], previous_hash='1', proof=100, gPointers={"1":1}, gIndex=1, previous_g_hash="1")#{"A":{"index":1,"hash":"233333"}}
+a = blockchain.new_block(1, time(), [], previous_hash='1', proof=100, gPointers={"1":1}, gindex=1, previous_g_hash="1")#{"A":{"index":1,"hash":"233333"}}
 # blockchain.submit_global_block(a)
 # print(a)
 # blockchain.submit_block(a)
@@ -483,8 +483,8 @@ a = {"a":1}
 # print(blockchain.get_block_from_index(1))
 # print(blockchain.index)
 # print(blockchain.globalchainindex)
-print( blockchain.get_all_block_from_index(1))
-print( blockchain.get_all_block_from_index(2))
-print( blockchain.get_all_block_from_index(3))
-print( blockchain.get_all_gblock_from_index(1))
-print( blockchain.get_all_gblock_from_index(2))
+# print( blockchain.get_all_block_from_index(1))
+# print( blockchain.get_all_block_from_index(2))
+# print( blockchain.get_all_block_from_index(3))
+# print( blockchain.get_all_gblock_from_index(1))
+# print( blockchain.get_all_gblock_from_index(2))

@@ -1,0 +1,21 @@
+{
+    "name1" : "block-0",
+    "name2" : "gblock-0",
+    "data" : 
+        {
+            "index" : 0,
+            "gIndex" : 0,
+            "timestamp" : 0,
+            "transactions" : 
+                [
+                    {
+                        "sender" : "0", // 0 代表挖矿所得
+                        "recipient" : "ffffffff", 
+                        "amount" :  10000 // 初始挖矿奖励 10000
+                    }
+                ],
+            "proof" : 0,
+            "previous_hash" : "0",
+            "previous_g_hash" : "0"
+        }
+}
