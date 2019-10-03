@@ -1,19 +1,28 @@
 {
-    "name1" : "block-0",
-    "name2" : "gblock-0",
+    "name0" : "block-0",
     "data" : 
         {
             "index" : 0,
             "gIndex" : 0,
+            "name":"eva",
             "timestamp" : 0,
-            "transactions" : 
-                [
-                    {
-                        "sender" : "0", // 0 代表挖矿所得
-                        "recipient" : "ffffffff", 
-                        "amount" :  10000 // 初始挖矿奖励 10000
-                    }
-                ],
+            "transactions" : "bd55e377bf5dadaf1963bf9f570b425a70c07aeeb887555749d1f4520ae2e495",
+                                                                                                        // [
+                                                                                                        //     {
+                                                                                                        //         "sender" : "0", // 0 代表挖矿所得
+                                                                                                        //         "recipient" : "ffffffff", 
+                                                                                                        //         "amount" :  10000 // 初始挖矿奖励 10000
+                                                                                                        //     }
+                                                                                                        // ]
+
+                                                                                                        //transaction1 = {
+                                                                                                        //         "sender" : "0", // 0 代表挖矿所得
+                                                                                                        //         "recipient" : "ffffffffffffffffffffffffffffffffffffffff", 
+                                                                                                        //         "amount" :  10000 // 初始挖矿奖励 10000
+                                                                                                        //     }
+                                                                                                        //
+                                                                                                        // block_string = json.dumps(dic, sort_keys=True).encode()
+                                                                                                        //"bd55e377bf5dadaf1963bf9f570b425a70c07aeeb887555749d1f4520ae2e495" == hashlib.sha256(block_string).hexdigest()
             "proof" : 0,
             "previous_hash" : "0",
             "previous_g_hash" : "0"

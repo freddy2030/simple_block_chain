@@ -4,7 +4,7 @@ from time import time
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 from uuid import uuid4
-
+import util
 import requests
 # from flask import Flask, jsonify, request, g, Flask,session
 
@@ -15,6 +15,15 @@ import os
 TRANSCTIONS_POOL_KEY = "transactions_pool"
 
 def initBlockChain(self):
+    if self.id == "":
+        while(1):
+            input_id = input("Enter your chain id: ")
+            if util.isString2SHA256(input_id):
+                self.id = input_id
+                break
+            else :
+                print("this id is not a sha256 string, please input again")
+
     index = 1
     while(1):
         key = "block-" + str(index)
@@ -41,6 +50,7 @@ class Blockchain:
         self.nodes = set()
         self.globalchainindex = -1
         self.index = -1
+        self.id = ""
         
 
         initBlockChain(self)
@@ -92,6 +102,7 @@ class Blockchain:
             'sender': sender,
             'recipient': recipient,
             'amount': amount,
+            "nounce": 1
         }
         
         new_transactions_key = self.hash( new_transactions )
@@ -284,6 +295,7 @@ class Blockchain:
             # }
         # else :
         block = {
+            "id":self.id,
             'index': index,
             'gindex': gindex,
             'timestamp': timestamp,
@@ -293,8 +305,8 @@ class Blockchain:
             'previous_g_hash': previous_g_hash 
         }
         
-        if gPointers:
-            block['globalpointer'] = gPointers
+        # if gPointers:
+        #     block['globalpointer'] = gPointers
 
 
         # Reset the current list of transactions
@@ -466,6 +478,9 @@ class Blockchain:
         index = gblockInfo["index"]
         key = "gblock-" + index
         self.db.putJson(key, blockInfo)
+
+    def valid_transactions(self, transaction):
+        pass
 
 blockchain = Blockchain( mleveldb ) 
 

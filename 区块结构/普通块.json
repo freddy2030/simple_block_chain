@@ -2,15 +2,14 @@
     "name" : "block-x ( 1 <= x )",
     "data" : 
         {
+            "id":"a4ddd1cebc807d09950b870b2039604242d4950c3fa403a3c0ca9c13ed9586f0",
             "index" : 1,
             "gindex" : 1,
             "timestamp" : 0.0, //float
-            "transactions" : 
-                [
-                    
-                ],
+            "transactions" : "1111",
             "previous_hash" : "FFFFFF", //SHA256
             "previous_g_hash" : "FFFFf",
             "proof" : 1 // 0 - 2^20
         }
+    
 }
