@@ -1,7 +1,64 @@
 import hashlib, json
-import leveldbapi as db
+import leveldbapi
 
 FOUNDATIONBLOCK_ACCOUNT = "ffffffffffffffffffffffffffffffffffffffff"
+
+db = leveldbapi.mleveldb
+
+#account
+def getBalance(account):
+    accountData = db.getValue(account)
+    if not accountData:
+        return 0
+    return accountData["balance"]
+
+def setBanlance(account, balance):
+    accountData = db.getValue(account)
+    accountData["balance"] = balance
+    db.putJson(account, accountData)
+
+def getTempBalance(account):
+    accountData = db.getValue(account)
+    if not accountData:
+        return 0
+    return accountData["tempBalance"]
+
+def setTempBalance(account, balance):
+    accountData = db.getValue(account)
+    accountData["tempBalance"] = balance
+    db.putJson(account, accountData)
+
+#transcation
+
+def isTranscationVaild(transaction):
+    sender = transaction["sender"]
+    amount = transaction["amount"]
+    if not sender or amount <= 0:
+        return False
+    # balance = util.getBalance(sender)
+    balance = util.getTempBalance(sender)
+    if balance < amount:
+        return False
+    return True
+
+
+
+# db.putJson("776b95dc71eff9c4ecf5762c46acebdad73e73de", {
+#     "balance": 80,
+#     "nonce": 7,
+#     "tempBalance": 60,
+#     "tempNonce": 8 
+# })    
+
+# setBanlance("776b95dc71eff9c4ecf5762c46acebdad73e73de",11)
+# setTempBalance("776b95dc71eff9c4ecf5762c46acebdad73e73de",11)
+
+# print(getBalance("776b95dc71eff9c4ecf5762c46acebdad73e73de"))
+
+# print(getTempBalance("776b95dc71eff9c4ecf5762c46acebdad73e73de"))
+
+
+#####################
 
 def getMinerTranscation(recipient): 
     transcation = {

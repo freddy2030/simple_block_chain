@@ -15,6 +15,12 @@ import os
 TRANSCTIONS_POOL_KEY = "transactions_pool"
 FOUNDATIONBLOCK_HASH = "4f025c4ef95f64c069dc448b3aef548332f0db12ef7567ff8fa345bd16fe8f11"
 
+def getBalance(account):
+    accountData = mleveldb.getValue("account")
+    if not accountData:
+        return 0
+    return accountData["balance"]
+
 def addFoundationBlock(self):
     foundationBlock = {
             "id": "eva",
@@ -83,8 +89,8 @@ class Blockchain:
         self.globalchainindex = -1
         self.index = -1
         self.id = ""
+        self.transactionList = []
         self.packagedTransaction = []
-        
 
         initBlockChain(self)
         # 创建创世块
@@ -108,6 +114,9 @@ class Blockchain:
         # else:
         #     raise Exception("ERROR: no db !!!")
 
+    def addTransaction(self, transaction):  #not finish
+        pass
+       
     def register_node(self, address: str) -> None:
         """
         Add a new node to the list of nodes
