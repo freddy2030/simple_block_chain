@@ -3,5 +3,6 @@
     "recipient":"222",
     "amount":10,
     "nonce":12,
-    "signHash":"XXXX" //对哈希值的签名
+    "signature":"XXXX", //对哈希值的签名
+    "public":"xxxxxx"
 }

@@ -115,7 +115,10 @@ class Blockchain:
         #     raise Exception("ERROR: no db !!!")
 
     def addTransaction(self, transaction):  #not finish
-        pass
+        if not util.isTranscationVaild(transaction):
+            return False
+        self.transactionList.append(transaction)
+        
        
     def register_node(self, address: str) -> None:
         """
