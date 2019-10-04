@@ -9,6 +9,31 @@ FOUNDATIONBLOCK_ACCOUNT = "ffffffffffffffffffffffffffffffffffffffff"
 db = leveldbapi.mleveldb
 #hash
 
+def isString2SHA256(sha256string):
+    if len(sha256string) != 64:
+        return False
+    
+    try :
+        bytes.fromhex(sha256string)
+    except Exception as e:
+        print(e)
+        return False
+
+    return True
+
+def isString2Account(accountString):
+    if len(accountString) != 40:
+        return False
+    
+    try :
+        bytes.fromhex(accountString)
+    except Exception as e:
+        print(e)
+        return False
+
+    return True
+
+
 def transcationHash(transcation):
     # if "signature" in transcation:
     #     del(transcation["signature"])
@@ -32,8 +57,28 @@ def arrayHash(arrayObj):
 
 
 #account
-def updateAccount():
-    pass
+def updateAccount(transcation):
+    sender = transcation["sender"]
+    nonce = transcation["nonce"]
+    recipient =  transcation["recipient"]
+    amount = transcation["amount"]
+
+    senderAccount = db.getValue(sender)
+    senderAccount["tempNonce"] += 1
+    senderAccount["tempBalance"] -= amount
+    db.putJson(sender, senderAccount)
+
+    recipientAccount = db.getValue(recipient)
+    if recipientAccount:
+        recipientAccount["tempBalance"] += amount
+    else :
+        recipientAccount = {
+            "balance": 0,
+            "nonce": 0,
+            "tempNonce": 0,
+            "tempBalance": amount
+        }
+    db.putJson(recipient, recipientAccount)
 
 def getBalance(account):
     accountData = db.getValue(account)
@@ -97,12 +142,13 @@ def isTranscationVaild(transaction):
     if not sender or amount <= 0:
         return False
     # balance = util.getBalance(sender)
-    if nonce != (getTempBalance(sender) + 1):
+    tempNonce = getNonce(sender)
+    if nonce != (tempNonce + 1):
         return False
     balance = getTempBalance(sender)
     if balance < amount:
         return False
-    if not isString2SHA256(recipient):
+    if not isString2Account(recipient):
         return False
     return True
 
@@ -119,10 +165,19 @@ def getTranscationSignature(private, transaction):
     signature = sk.sign(transcationHash(transaction).encode("utf-8"))
     return signature
 
+xhaccount = {
+    "balance": 20,
+    "nonce": 0,
+    "tempNonce": 0,
+    "tempBalance": 20
+}
+
+db.putJson("776b95dc71eff9c4ecf5762c46acebdad73e73de", xhaccount)
+
 transcation = {
     "sender" : "776b95dc71eff9c4ecf5762c46acebdad73e73de",
     "nonce" : 1,
-    "recipient" : "haoleia",
+    "recipient" : "0748a4169ca8d015bd2c8043179c6892880cac01",
     "amount": 10,
     "signature": "1111"
 }
@@ -134,7 +189,7 @@ transcation["public"] = "6a505807200672fc382f25a0cb8d3e5d4f634eadb1f7cc2ed90726b
 
 print(isTranscationVaild(transcation))
 
-
+updateAccount(transcation)
 
 
 
@@ -194,28 +249,7 @@ def hash(block):
     block_string = json.dumps(block, sort_keys=True).encode()
     return hashlib.sha256(block_string).hexdigest()
 
-def isString2SHA256(sha256string):
-    if len(sha256string) != 64:
-        return False
-    
-    try :
-        bytes.fromhex(sha256string)
-    except Exception as e:
-        print(e)
-        return False
 
-    return True
 
-def isString2Account(accountString):
-    if len(accountString) != 40:
-        return False
-    
-    try :
-        bytes.fromhex(sha256string)
-    except Exception as e:
-        print(e)
-        return False
-
-    return True
     
 # a = "13b2cc6cc00f32dfc9f814e9a1759c202d12d7c1f55128cd1a9df14c84d983df"

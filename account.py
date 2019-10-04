@@ -3,7 +3,7 @@ from ecdsa import SigningKey, NIST384p, VerifyingKey, SECP256k1
 from binascii import hexlify, unhexlify
 import hashlib
 
-private = sha256("xiaohuang".encode()).hexdigest()
+private = sha256("fd".encode()).hexdigest()
 
 print(type(private))
 
@@ -14,14 +14,14 @@ p = hexlify(vk.to_string()).decode()
 
 obj = hashlib.new('ripemd160', p.encode('utf-8'))
 ripemd_160_value = obj.hexdigest()
-# print(private)
-# print(hexlify(vk.to_string()).decode())
+print(private)
+print(hexlify(vk.to_string()).decode())
 
 vkString = hexlify(vk.to_string()).decode()
 print(vkString)
 vk = VerifyingKey.from_string(unhexlify(vkString), curve=SECP256k1)
-# print(p)
-# print(ripemd_160_value)
+print(p)
+print(ripemd_160_value)
 
 
 

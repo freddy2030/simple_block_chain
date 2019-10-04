@@ -1,5 +1,5 @@
 import leveldb
-import json
+import json, time
 
 # db = leveldb.LevelDB('./db')
 # db.Put(b"0", b"1")
@@ -34,6 +34,7 @@ class LevelDB:
             valueJson = json.loads(valueStr)
             return valueJson
         finally:
+            time.sleep(0.1)
             del(db)
 
 
@@ -43,6 +44,7 @@ class LevelDB:
         blockByte = str.encode(blockStr)
         db = leveldb.LevelDB(self.path)
         db.Put(keyByte, blockByte)
+        time.sleep(0.1)
         print("save success  " + key)
         del(db)
 
