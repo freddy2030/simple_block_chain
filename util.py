@@ -1,10 +1,22 @@
-import hashlib
+import hashlib, json
+import leveldbapi as db
 
+FOUNDATIONBLOCK_ACCOUNT = "ffffffffffffffffffffffffffffffffffffffff"
 
+def getMinerTranscation(recipient): 
+    transcation = {
+        "sender" : "0", 
+        "recipient" : recipient, 
+        "amount" :  10000
+    }
+    return transcation
+
+def isBlockExit(blockIndex):
+    pass
 
 def generateSha256FromString(inputstring):
     return hashlib.sha256("hjw".encode("utf-8")).hexdigest()
-print(generateSha256FromString("111"))
+# print(generateSha256FromString("111"))
 def hash(block):
     if 'gPointers' in block:
         del(block['gPoninters'])

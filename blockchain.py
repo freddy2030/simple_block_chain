@@ -13,16 +13,29 @@ from leveldbapi import mleveldb
 import os
 
 TRANSCTIONS_POOL_KEY = "transactions_pool"
+FOUNDATIONBLOCK_HASH = "4f025c4ef95f64c069dc448b3aef548332f0db12ef7567ff8fa345bd16fe8f11"
+
+def addFoundationBlock(self):
+    foundationBlock = {
+            "id": "eva",
+            'index': 0,
+            'gindex': 0,
+            'timestamp': 0,
+            'transactions': "bd55e377bf5dadaf1963bf9f570b425a70c07aeeb887555749d1f4520ae2e495",
+            'proof': 0,
+            'previous_hash': "0",
+            'previous_g_hash': "0" 
+        }
+    if (self.get_block_from_index("0") == None):
+        print("not exit")
+        self.submit_block(foundationBlock)
+    
+    if (self.get_cur_gblock_from_index("0") == None)
+        self.submit_global_block()
+
 
 def initBlockChain(self):
-    if self.id == "":
-        while(1):
-            input_id = input("Enter your chain id: ")
-            if util.isString2SHA256(input_id):
-                self.id = input_id
-                break
-            else :
-                print("this id is not a sha256 string, please input again")
+    addFoundationBlock(self)
 
     index = 1
     while(1):
@@ -39,11 +52,21 @@ def initBlockChain(self):
             self.globalchainindex = gindex -1
             break
         gindex += 1
+    chain_info = self.db.getValue("chain_info")
+    if chain_info:
+        self.id = chain_info["id"]
+    if self.id == "":
+            while(1):
+                input_id = input("Enter your chain id: ")
+                if util.isString2SHA256(input_id):
+                    self.id = input_id
+                    break
+                else :
+                    print("this id is not a sha256 string, please input again")
 
 class Blockchain:
     def __init__(self, db):
         self.db = db
-        self.chainName = ""
         # self.current_transactions = []
         # self.chain = []
         # self.globalchain = []
@@ -51,6 +74,7 @@ class Blockchain:
         self.globalchainindex = -1
         self.index = -1
         self.id = ""
+        self.packagedTransaction = []
         
 
         initBlockChain(self)
@@ -75,10 +99,6 @@ class Blockchain:
         # else:
         #     raise Exception("ERROR: no db !!!")
 
-    def setChainName(self, name):
-        self.chainName = name
-
-
     def register_node(self, address: str) -> None:
         """
         Add a new node to the list of nodes
@@ -89,7 +109,7 @@ class Blockchain:
         print(parsed_url)
         self.nodes.add(parsed_url.netloc)
 
-    def new_transaction(self, sender: str, recipient: str, amount: int) -> int:
+    def new_transaction(self, sender: str, recipient: str, amount: int) -> int:#not finishwaq
         """
         生成新交易信息，信息将加入到下一个待挖的区块中
 
@@ -128,13 +148,13 @@ class Blockchain:
         return self.db.getValue( TRANSCTIONS_POOL_KEY )
 
     def get_block_from_hash(self, mHash ):
-        return self.db.getValue( mHash )
+        return self.db.getValue( mHash )["block"]
     
     def get_block_from_index(self, index):
         blockInfo = self.get_block_info_from_index( index )
         if blockInfo:
             mHash = blockInfo["curBlock"]
-            block = self.db.getValue( mHash )
+            block = self.db.getValue( mHash )["block"]
             return block
         return None
 
@@ -158,7 +178,7 @@ class Blockchain:
         gblockInfoKey = "gblock-" + str( index )
         gblockInfo = self.db.getValue( gblockInfoKey )
         mHash = gblockInfo["curBlock"]
-        block = self.db.getValue( mHash )
+        block = self.db.getValue( mHash )["block"]
         return block
     
     def get_all_gblock_from_index(self, index):
@@ -203,12 +223,33 @@ class Blockchain:
             return False
         index = block['index']
         
-        if index != 1:
+        if index == 0:
+            if self.hash(block) == FOUNDATIONBLOCK_HASH:
+                tran_data = util.getMinerTranscation(util.FOUNDATIONBLOCK_ACCOUNT)
+                self.packagedTransaction.append(tran_data)
+                blockData = {
+                    "transactions": self.packagedTransaction,
+                    "block": block
+                }
+                self.db.putJson(FOUNDATIONBLOCK_HASH, blockData) 
+                print("  初始块  :   " )
+                print(self.db.getValue(FOUNDATIONBLOCK_HASH))           
+        else :
             beforeBlockInfo = self.get_all_gblock_from_index( index - 1 )
             if beforeBlockInfo:
                 beforeBlockPool = beforeBlockInfo["blocks"]
                 if mHash not in beforeBlockPool:
                     return False
+                else:
+                    self.packagedTransaction.append(util.getMinerTranscation(""))
+                    blockData = {
+                        "transactions": self.packagedTransaction,
+                        "block": block,
+                        "gpointer":{
+                            
+                        }
+                    }
+                    self.db.putJson(self.hash(block), blockData)
        
         blockInfoKey = "block-" + str(index)
         blockInfo = self.db.getValue( blockInfoKey )
@@ -220,7 +261,8 @@ class Blockchain:
                 "blockpool": [ mHash ]
             }
         else:
-            blockInfo["blockpool"].append( mHash )
+            if mHash not in blockInfo["blockpool"]:
+                blockInfo["blockpool"].append( mHash )
         
         self.db.putJson(blockInfoKey, blockInfo)
          
@@ -234,7 +276,9 @@ class Blockchain:
         if "gindex" not in block:
             return False
         index = block['gindex']
-        if index != 1:
+        if idnex = 0:
+            pass
+        else :
             beforeBlockInfo = self.get_all_gblock_from_index( index - 1 )
             if beforeBlockInfo:
                 beforeBlockPool = beforeBlockInfo["blocks"]
@@ -294,6 +338,7 @@ class Blockchain:
             #     'previous_hash': previous_hash or self.hash(self.chain[-1]),
             # }
         # else :
+
         block = {
             "id":self.id,
             'index': index,
