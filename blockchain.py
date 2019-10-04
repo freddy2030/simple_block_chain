@@ -26,16 +26,21 @@ def addFoundationBlock(self):
             'previous_hash': "0",
             'previous_g_hash': "0" 
         }
-    if (self.get_block_from_index("0") == None):
+    if (self.get_block_from_index(0) == None):
         print("not exit")
         self.submit_block(foundationBlock)
     
-    if (self.get_cur_gblock_from_index("0") == None)
-        self.submit_global_block()
+    # if (self.get_cur_gblock_from_index(0) == None):
+    #     self.submit_global_block(foundationBlock)
 
+def readChainInfo(self):
+    chain_info = self.db.getValue("chain_info")
+    if chain_info:
+        self.id = chain_info["id"]
 
 def initBlockChain(self):
     addFoundationBlock(self)
+    readChainInfo(self)
 
     index = 1
     while(1):
@@ -60,6 +65,10 @@ def initBlockChain(self):
                 input_id = input("Enter your chain id: ")
                 if util.isString2SHA256(input_id):
                     self.id = input_id
+                    chain_info = {
+                        "id": input_id
+                    }
+                    self.db.putJson("chain_info",chain_info)
                     break
                 else :
                     print("this id is not a sha256 string, please input again")
@@ -148,13 +157,17 @@ class Blockchain:
         return self.db.getValue( TRANSCTIONS_POOL_KEY )
 
     def get_block_from_hash(self, mHash ):
-        return self.db.getValue( mHash )["block"]
+        blockData = self.db.getValue( mHash )
+        print(blockData)
+        if blockData:
+            return blockData["block"]
+        return None
     
     def get_block_from_index(self, index):
         blockInfo = self.get_block_info_from_index( index )
         if blockInfo:
             mHash = blockInfo["curBlock"]
-            block = self.db.getValue( mHash )["block"]
+            block = self.get_block_from_hash(mHash)
             return block
         return None
 
@@ -173,10 +186,12 @@ class Blockchain:
         return None
         
     def get_cur_gblock_from_index(self, index):
-        if index <= 0:
+        if index < 0:
             return 0
         gblockInfoKey = "gblock-" + str( index )
         gblockInfo = self.db.getValue( gblockInfoKey )
+        if not gblockInfo:
+            return None
         mHash = gblockInfo["curBlock"]
         block = self.db.getValue( mHash )["block"]
         return block
@@ -244,10 +259,7 @@ class Blockchain:
                     self.packagedTransaction.append(util.getMinerTranscation(""))
                     blockData = {
                         "transactions": self.packagedTransaction,
-                        "block": block,
-                        "gpointer":{
-                            
-                        }
+                        "block": block
                     }
                     self.db.putJson(self.hash(block), blockData)
        
@@ -276,7 +288,7 @@ class Blockchain:
         if "gindex" not in block:
             return False
         index = block['gindex']
-        if idnex = 0:
+        if index == 0:
             pass
         else :
             beforeBlockInfo = self.get_all_gblock_from_index( index - 1 )
