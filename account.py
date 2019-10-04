@@ -24,6 +24,6 @@ print(ripemd_160_value)
 signature = sk.sign("message".encode("utf-8"))
 # assert vk.verify(signature, "messa1ge".encode("utf-8"))
 
-assert 1>2
+# assert 1>2
 
 print("1")

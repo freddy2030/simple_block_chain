@@ -28,20 +28,57 @@ def setTempBalance(account, balance):
     accountData["tempBalance"] = balance
     db.putJson(account, accountData)
 
+def getNonce(account):
+    accountData = db.getValue(account)
+    if not accountData:
+        return 0
+    return accountData["nonce"]
+
+def setNonce(account, nonce):
+    accountData = db.getValue(account)
+    accountData["nonce"] = nonce
+    db.putJson(account, accountData)
+
+def getTempNonce(account):
+    accountData = db.getValue(account)
+    if not accountData:
+        return 0
+    return accountData["tempNonce"]
+
+def setNonce(account, nonce):
+    accountData = db.getValue(account)
+    accountData["tempNonce"] = nonce
+    db.putJson(account, accountData)
 #transcation
 
 def isTranscationVaild(transaction):
     sender = transaction["sender"]
     amount = transaction["amount"]
+    nonce = transaction["nonce"]
+    
     if not sender or amount <= 0:
         return False
     # balance = util.getBalance(sender)
-    balance = util.getTempBalance(sender)
+    if nonce != (getTempBalance(sender) + 1):
+        return False
+    balance = getTempBalance(sender)
     if balance < amount:
         return False
     return True
 
+transcation = {
+    "sender" : "776b95dc71eff9c4ecf5762c46acebdad73e73de",
+    "nonce" : 1,
+    "recipient" : "haoleia",
+    "amount": 10
+}
 
+isTranscationVaild(transcation)
+
+#hash
+
+def transcationHash(transcation):
+    pass
 
 # db.putJson("776b95dc71eff9c4ecf5762c46acebdad73e73de", {
 #     "balance": 80,

@@ -2,5 +2,6 @@
     "sender":"111",
     "recipient":"222",
     "amount":10,
-    "nonce":12
+    "nonce":12,
+    "signHash":"XXXX" //对哈希值的签名
 }
