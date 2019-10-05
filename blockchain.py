@@ -226,7 +226,7 @@ class Blockchain:
         return None
     
     def get_all_block_from_index(self, index):
-        if index <= 0:
+        if index < 0:
             return False
 
         blockInfoKey = "block-" + str( index )
@@ -243,8 +243,17 @@ class Blockchain:
             return blockSum
         return None
 
+    def isBlockVaild(self, beforeInfo, block):
+        if util.hash(block)[:3] != "000":
+            return False
+        print(beforeInfo)
+        if block["previous_hash"] not in beforeInfo["blockpool"]:
+            return False
+        
+        return True
+
     def submit_block(self, block):
-        mHash = self.hash(block)
+        mHash = util.hash(block)
        
         if "index" not in block:
             return False
@@ -262,18 +271,16 @@ class Blockchain:
                 print("  初始块  :   " )
                 print(self.db.getValue(FOUNDATIONBLOCK_HASH))           
         else :
-            beforeBlockInfo = self.get_all_gblock_from_index( index - 1 )
-            if beforeBlockInfo:
-                beforeBlockPool = beforeBlockInfo["blocks"]
-                if mHash not in beforeBlockPool:
-                    return False
-                else:
-                    self.packagedTransaction.append(util.getMinerTranscation(""))
-                    blockData = {
-                        "transactions": self.packagedTransaction,
-                        "block": block
-                    }
-                    self.db.putJson(self.hash(block), blockData)
+            beforeBlockInfo = self.db.getValue( "block-" + str(index - 1) )
+            if self.isBlockVaild(beforeBlockInfo, block):
+            # self.packagedTransaction.append(util.getMinerTranscation(""))
+                blockData = {
+                    "transactions": self.packagedTransaction,
+                    "block": block
+                }
+                self.db.putJson(mHash, blockData)
+            else :
+                return False
        
         blockInfoKey = "block-" + str(index)
         blockInfo = self.db.getValue( blockInfoKey )
@@ -289,7 +296,7 @@ class Blockchain:
                 blockInfo["blockpool"].append( mHash )
         
         self.db.putJson(blockInfoKey, blockInfo)
-         
+        self.index += 1
         return True
 
     def submit_global_block(self, block): 
@@ -343,7 +350,7 @@ class Blockchain:
     
 
     def new_block(self, index, timestamp, current_transactions,
-                  previous_hash, proof, previous_g_hash, gPointers = None, gindex = 0):
+                  previous_hash, proof, previous_g_hash, gPointers = None, gIndex = 0):
         """
         生成新块
 
@@ -362,13 +369,17 @@ class Blockchain:
             #     'previous_hash': previous_hash or self.hash(self.chain[-1]),
             # }
         # else :
+        transaction = util.arrayHash(self.packagedTransaction)
 
+        print("transaction")
+        print(transaction)
+        print(self.packagedTransaction)
         block = {
             "id":self.id,
             'index': index,
-            'gindex': gindex,
+            'gindex': gIndex,
             'timestamp': timestamp,
-            'transactions': current_transactions,
+            'transactions': transaction,
             'proof': proof,
             'previous_hash': previous_hash ,
             'previous_g_hash': previous_g_hash 
@@ -388,7 +399,7 @@ class Blockchain:
         return block
 
     def new_candidate_block(self, index, timestamp, current_transactions,
-                            previous_hash, previous_g_hash, gindex = 0):
+                            previous_hash, previous_g_hash, gIndex = 0):
         """
         生成新块
 
@@ -396,11 +407,17 @@ class Blockchain:
         :param previous_hash: Hash of previous Block
         :return: New Block
         """
+        self.packagedTransaction = self.transactionList
+        packagedTran = util.getMinerTranscation("776b95dc71eff9c4ecf5762c46acebdad73e73de")
+        if packagedTran not in self.packagedTransaction:
+            self.packagedTransaction.append(packagedTran)
+        print(self.packagedTransaction)
         block = {
+            "id": self.id,
             'index': index,
-            'gindex': gindex,
+            'gindex': gIndex,
             'timestamp': timestamp,
-            'transactions': current_transactions,
+            'transactions': util.arrayHash(self.packagedTransaction),
             'previous_hash': previous_hash,
             'previous_g_hash': previous_g_hash,
             'proof': ''
@@ -553,7 +570,7 @@ class Blockchain:
 
 blockchain = Blockchain( mleveldb ) 
 
-a = blockchain.new_block(1, time(), [], previous_hash='1', proof=100, gPointers={"1":1}, gindex=1, previous_g_hash="1")#{"A":{"index":1,"hash":"233333"}}
+a = blockchain.new_block(1, time(), [], previous_hash='1', proof=100, gPointers={"1":1}, gIndex=1, previous_g_hash="1")#{"A":{"index":1,"hash":"233333"}}
 # blockchain.submit_global_block(a)
 # print(a)
 # blockchain.submit_block(a)

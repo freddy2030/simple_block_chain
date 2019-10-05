@@ -2,6 +2,7 @@ import hashlib, json
 import leveldbapi
 from ecdsa import SigningKey, NIST384p, VerifyingKey, SECP256k1
 from binascii import hexlify, unhexlify
+import copy
 # import ecdsa
 
 FOUNDATIONBLOCK_ACCOUNT = "ffffffffffffffffffffffffffffffffffffffff"
@@ -52,7 +53,10 @@ def transcationHash(transcation):
 def arrayHash(arrayObj):
     arrayString = ""
     for obj in arrayObj:
-        arrayString += json.dumps(transcation, sort_keys=True)
+        newObj = obj.copy()
+        if "signature" in newObj:
+            del(newObj["signature"])
+        arrayString += json.dumps(newObj, sort_keys=True)
     return hashlib.sha256(arrayString.encode()).hexdigest()
 
 
@@ -163,6 +167,7 @@ def getTranscationString(transaction):
 def getTranscationSignature(private, transaction):
     sk = SigningKey.from_string(unhexlify(private), curve=SECP256k1)
     signature = sk.sign(transcationHash(transaction).encode("utf-8"))
+
     return signature
 
 xhaccount = {
@@ -184,12 +189,16 @@ transcation = {
 
 a = getTranscationSignature("13b2cc6cc00f32dfc9f814e9a1759c202d12d7c1f55128cd1a9df14c84d983df", transcation)
 
-transcation["signature"] = a
-transcation["public"] = "6a505807200672fc382f25a0cb8d3e5d4f634eadb1f7cc2ed90726bc29cc57645967a78848e95cc4a93aa144bc7c908c45ede7874c1e82f9e559c5053e4cbe55"
+# b = a.decode()
+# print(type(a))
+# print(b)
 
-print(isTranscationVaild(transcation))
+# transcation["signature"] = a
+# transcation["public"] = "6a505807200672fc382f25a0cb8d3e5d4f634eadb1f7cc2ed90726bc29cc57645967a78848e95cc4a93aa144bc7c908c45ede7874c1e82f9e559c5053e4cbe55"
 
-updateAccount(transcation)
+# print(isTranscationVaild(transcation))
+
+# updateAccount(transcation)
 
 
 

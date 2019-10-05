@@ -92,10 +92,15 @@ def mine():
     gindex = blockchain.globalchainindex + 1
     timestamp = time()
     current_transactions = blockchain.get_transactions_pool()
+   
     last_block = blockchain.last_block
+    print("1111111")
+    print(last_block)
     previous_hash = blockchain.hash( last_block )
+
     last_g_block = blockchain.last_gblock
-    previous_g_hash = blockchain.hash( last_g_block )
+    # previous_g_hash = blockchain.hash( last_g_block )
+    previous_g_hash = "4f025c4ef95f64c069dc448b3aef548332f0db12ef7567ff8fa345bd16fe8f11"
     
     block_tmp = blockchain.new_candidate_block(index,
                                                timestamp,
@@ -108,7 +113,7 @@ def mine():
 
     # 生成正式区块
     
-    if block_hash[:4] == "0000":
+    if block_hash[:4] == "0000000":
         pinChain = json.load(open('./config/pinChain.json', 'r'))
         gPointer = []
         for pinName in pinChain:
@@ -139,6 +144,7 @@ def mine():
     else :
         block = blockchain.new_block(index, timestamp, current_transactions,
                                  previous_hash, proof, previous_g_hash, gIndex=gindex)
+        print(block)
         response = {
             'message': "New Block Forged",
             'index': block['index'],
@@ -147,6 +153,9 @@ def mine():
             'proof': block['proof'],
             'previous_hash': block['previous_hash'],
         }
+        blockchain.packagedTransaction = []
+        blockchain.submit_block(block)
+    
    
     return jsonify(response), 200
 
