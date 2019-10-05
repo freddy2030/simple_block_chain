@@ -8,6 +8,18 @@ import copy
 FOUNDATIONBLOCK_ACCOUNT = "ffffffffffffffffffffffffffffffffffffffff"
 
 db = leveldbapi.mleveldb
+
+#output
+def updateAllAccount(accountList):
+    for accountId in accountList:
+        account = db.getValue(accountId)
+        account["balance"] = account["tempBalance"]
+        account["nonce"] = account["tempNonce"]
+        db.putJson(accountId, account)
+ 
+def output_all_info():
+    pass
+
 #hash
 
 def isString2SHA256(sha256string):
@@ -61,17 +73,27 @@ def arrayHash(arrayObj):
 
 
 #account
+def initAccount(hashid, tempBalance):
+    account = {
+            "balance": 0,
+            "nonce": 0,
+            "tempNonce": 0,
+            "tempBalance": tempBalance
+        }
+    db.putJson(hashid, account)
+
 def updateAccount(transcation):
+    print(transcation)
     sender = transcation["sender"]
-    nonce = transcation["nonce"]
     recipient =  transcation["recipient"]
     amount = transcation["amount"]
 
     senderAccount = db.getValue(sender)
-    senderAccount["tempNonce"] += 1
-    senderAccount["tempBalance"] -= amount
-    db.putJson(sender, senderAccount)
-
+    if sender != "0":
+        senderAccount["tempNonce"] += 1
+        senderAccount["tempBalance"] -= amount
+        db.putJson(sender, senderAccount)
+        nonce = transcation["nonce"]
     recipientAccount = db.getValue(recipient)
     if recipientAccount:
         recipientAccount["tempBalance"] += amount

@@ -91,6 +91,7 @@ class Blockchain:
         self.id = ""
         self.transactionList = []
         self.packagedTransaction = []
+        self.tempAccount = []
 
         initBlockChain(self)
         # 创建创世块
@@ -118,6 +119,10 @@ class Blockchain:
         if not util.isTranscationVaild(transaction):
             return False
         self.transactionList.append(transaction)
+        if transaction["sender"] not in self.tempAccount:
+            self.tempAccount.append(transaction["sender"])
+        if transaction["recipient"] not in self.tempAccount:
+            self.tempAccount.append(transaction["recipient"])
         
        
     def register_node(self, address: str) -> None:
@@ -297,6 +302,15 @@ class Blockchain:
         
         self.db.putJson(blockInfoKey, blockInfo)
         self.index += 1
+
+        util.output_all_info()
+        util.updateAllAccount(self.tempAccount)
+        
+        self.tempAccount = []
+        for transcation in self.transactionList:
+            if transcation in self.packagedTransaction:
+                self.tempAccount.remove(transcation)
+        self.packagedTransaction = []
         return True
 
     def submit_global_block(self, block): 
@@ -411,6 +425,9 @@ class Blockchain:
         packagedTran = util.getMinerTranscation("776b95dc71eff9c4ecf5762c46acebdad73e73de")
         if packagedTran not in self.packagedTransaction:
             self.packagedTransaction.append(packagedTran)
+            util.updateAccount(packagedTran)
+            if packagedTran["recipient"] not in self.tempAccount:
+                self.tempAccount.append(packagedTran["recipient"])
         print(self.packagedTransaction)
         block = {
             "id": self.id,
