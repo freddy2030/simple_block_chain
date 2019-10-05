@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from uuid import uuid4
 import util
 import requests
+import transaction as settingTran
 # from flask import Flask, jsonify, request, g, Flask,session
 
 from leveldbapi import mleveldb
@@ -116,7 +117,7 @@ class Blockchain:
         # else:
         #     raise Exception("ERROR: no db !!!")
 
-    def addTransaction(self, transaction):  #not finish
+    def addTransaction(self, transaction): 
         if not util.isTranscationVaild(transaction):
             return False
         self.transactionList.append(transaction)
@@ -138,33 +139,6 @@ class Blockchain:
         parsed_url = urlparse(address)
         print(parsed_url)
         self.nodes.add(parsed_url.netloc)
-
-    def new_transaction(self, sender: str, recipient: str, amount: int) -> int:#not finishwaq
-        """
-        生成新交易信息，信息将加入到下一个待挖的区块中
-
-        :param sender: Address of the Sender
-        :param recipient: Address of the Recipient
-        :param amount: Amount
-        :return: The index of the Block that will hold this transaction
-        """
-        new_transactions = {
-            'sender': sender,
-            'recipient': recipient,
-            'amount': amount,
-            "nounce": 1
-        }
-        
-        new_transactions_key = self.hash( new_transactions )
-
-        self.db.putJson(new_transactions_key, new_transactions)
-
-        transactions_pool = self.db.getValue( TRANSCTIONS_POOL_KEY )
-
-        transactions_pool['pool'].append( new_transactions_key )
-
-
-        return new_transactions_key
 
     def get_transaction_from_hash(self, mHash):
         return self.db.getValue( mHash )
@@ -293,11 +267,12 @@ class Blockchain:
             if self.isBlockVaild(beforeBlockInfo, block):
             # self.packagedTransaction.append(util.getMinerTranscation(""))
                 blockData = {
-                    "transactions": self.packagedTransaction,
+                    "transactions": transaction,
                     "block": block
                 }
-                for transaction in self.packagedTransaction:
-                    self.addTransaction(transaction)
+                # for transaction in transaction:
+                #     if(transaction["sender"] !="0"):
+                #         self.addTransaction(transaction)
                 self.db.putJson(mHash, blockData)
             else :
                 return False
@@ -326,6 +301,7 @@ class Blockchain:
         #     if transcation in self.packagedTransaction:
         #         self.tempAccount.remove(transcation)
         # self.packagedTransaction = []
+        settingTran.resetBalance(self)
         return True
 
     def submit_global_block(self, block): 

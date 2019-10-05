@@ -73,6 +73,36 @@ def arrayHash(arrayObj):
 
 
 #account
+def getAccountList():
+    accountList = db.getValue("account-list")
+    if not accountList:
+        db.putJson("account-list", {"data":[]})
+        return []
+    return accountList["data"]
+
+def addAccountList(transcation):
+    sender = transcation["sender"]
+    recipient =  transcation["recipient"]
+    accountList = getAccountList()
+    if sender != "0" and sender not in accountList:
+        accountList.append(sender)
+    if recipient not in accountList:
+        accountList.append(recipient)
+    db.putJson("account-list", {"data":accountList})
+
+def clearAccount(transcation):
+    sender = transcation["sender"]
+    recipient =  transcation["recipient"]
+    account = {
+            "balance": 0,
+            "nonce": 0,
+            "tempNonce": 0,
+            "tempBalance": 0
+        }
+    if sender != "0":
+        db.putJson(sender, account)
+    db.putJson(recipient, account)
+
 def initAccount(hashid, tempBalance):
     account = {
             "balance": 0,
@@ -81,6 +111,24 @@ def initAccount(hashid, tempBalance):
             "tempBalance": tempBalance
         }
     db.putJson(hashid, account)
+
+def changeBalance(transcation):
+    sender = transcation["sender"]
+    recipient =  transcation["recipient"]
+    amount = transcation["amount"]
+    nonce = transcation["nonce"]
+
+    if sender != "0":
+        senderAccount = db.getValue(sender)
+        senderAccount["balance"] -= amount
+        if nonce > senderAccount["nonce"]:
+            senderAccount["nonce"] = nonce
+        db.putJson("sender",senderAccount)
+        
+    recipientAccount = db.getValue(recipient)
+    recipientAccount["balance"] += amount
+    db.putJson(recipient,recipientAccount)
+    
 
 def updateAccount(transcation):
     print(transcation)
@@ -192,6 +240,17 @@ def getTranscationSignature(private, transaction):
 
     return signature
 
+def generateTranscation(sender, recipient, amount, private):
+    nonce = getNonce(sender)
+    transcation = {
+        "sender": sender,
+        "recipient": recipient,
+        "amount": amount,
+        "nonce": (nonce + 1)
+    }
+    transcation["signature"] = getTranscationSignature(private, transcation)
+    return transcation
+
 xhaccount = {
     "balance": 20,
     "nonce": 0,
@@ -199,7 +258,7 @@ xhaccount = {
     "tempBalance": 20
 }
 
-db.putJson("776b95dc71eff9c4ecf5762c46acebdad73e73de", xhaccount)
+# db.putJson("776b95dc71eff9c4ecf5762c46acebdad73e73de", xhaccount)
 
 transcation = {
     "sender" : "776b95dc71eff9c4ecf5762c46acebdad73e73de",
@@ -263,7 +322,8 @@ def getMinerTranscation(recipient):
     transcation = {
         "sender" : "0", 
         "recipient" : recipient, 
-        "amount" :  10000
+        "amount" :  10000,
+        "nonce": 0
     }
     return transcation
 

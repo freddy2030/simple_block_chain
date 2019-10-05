@@ -59,11 +59,15 @@ def get_last_hash():
     return jsonify(response), 200
 @app.route("/get_all_account", methods=['GET'])
 def get_all_account():
-    accountList = {}
-    print(blockchain.account)
-    for account in blockchain.account:
-        accountList[account] = blockchain.db.getValue(account)
-    return jsonify(accountList), 200
+    AllaccountList = {}
+    # print(blockchain.account)
+    # for account in blockchain.account:
+    #     accountList[account] = blockchain.db.getValue(account)
+    accountList = blockchain.db.getValue("account-list")
+    if accountList:
+        for account in accountList["data"]:
+            AllaccountList[account] = blockchain.db.getValue(account)
+    return jsonify(AllaccountList), 200
 
 @app.route('/get_all_info', methods=['GET'])
 def get_all_info():
@@ -152,8 +156,12 @@ def mine():
             'proof': block['proof'],
             'previous_hash': block['previous_hash'],
         }
-        blockchain.packagedTransaction = []
-        blockchain.submit_block(block, blockchain.tempAccount)
+        if len(blockchain.transactionList) == 0:
+            print("11111")
+            blockchain.transactionList.append(util.getMinerTranscation("776b95dc71eff9c4ecf5762c46acebdad73e73de"))
+        blockchain.submit_block(block, blockchain.transactionList)
+        blockchain.transactionList.clear()
+        blockchain.transactionList.append(util.getMinerTranscation("776b95dc71eff9c4ecf5762c46acebdad73e73de"))
     
    
     return jsonify(response), 200
