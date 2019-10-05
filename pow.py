@@ -14,7 +14,7 @@ from flask import Flask, jsonify, request, g, Flask,session
 # import leveldb
 import os
 from blockchain import blockchain
-
+import util
 
 # Instantiate the Node
 app = Flask(__name__)
@@ -57,26 +57,25 @@ def get_last_hash():
         "hash": blockchain.hash(blockchain.last_block)
     }   
     return jsonify(response), 200
+@app.route("/get_all_account", methods=['GET'])
+def get_all_account():
+    accountList = {}
+    print(blockchain.account)
+    for account in blockchain.account:
+        accountList[account] = blockchain.db.getValue(account)
+    return jsonify(accountList), 200
 
-@app.route('/setName', methods=['POST'])
-def setName():
-    values = request.form
-    # print("@244",request.form.get('chainName'))
-    name = values.get('chainName')
-    if name:
-        blockchain.setChainName(values["chainName"])
-        response = {
-            "status": "success",
-            "message":"set name successed"
-        } 
-    else:
-        response = {
-            "status": "fail",
-            "message":"set name failed"
-        } 
-    
-    return jsonify(response), 200
-
+@app.route('/get_all_info', methods=['GET'])
+def get_all_info():
+    i = 0
+    blockList = {}
+    while( i <= blockchain.index):
+        blockInfo = blockchain.get_block_info_from_index(str(i))
+        for blockHash in blockInfo["blockpool"]:
+            blockInfo[blockHash] = blockchain.get_block_with_transcation_from_hash(blockHash)
+        blockList["block-"+str(i)] = blockInfo
+        i+=1
+    return jsonify(blockList), 200
 @app.route('/mine', methods=['GET'])
 def mine():
     # 给工作量证明的节点提供奖励.
@@ -96,7 +95,7 @@ def mine():
     last_block = blockchain.last_block
     print("1111111")
     print(last_block)
-    previous_hash = blockchain.hash( last_block )
+    previous_hash = util.hash( last_block )
 
     last_g_block = blockchain.last_gblock
     # previous_g_hash = blockchain.hash( last_g_block )
@@ -154,7 +153,7 @@ def mine():
             'previous_hash': block['previous_hash'],
         }
         blockchain.packagedTransaction = []
-        blockchain.submit_block(block)
+        blockchain.submit_block(block, blockchain.tempAccount)
     
    
     return jsonify(response), 200

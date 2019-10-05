@@ -34,7 +34,7 @@ def addFoundationBlock(self):
         }
     if (self.get_block_from_index(0) == None):
         print("not exit")
-        self.submit_block(foundationBlock)
+        self.submit_block(foundationBlock, [])
     
     # if (self.get_cur_gblock_from_index(0) == None):
     #     self.submit_global_block(foundationBlock)
@@ -92,6 +92,7 @@ class Blockchain:
         self.transactionList = []
         self.packagedTransaction = []
         self.tempAccount = []
+        self.account = []
 
         initBlockChain(self)
         # 创建创世块
@@ -123,7 +124,10 @@ class Blockchain:
             self.tempAccount.append(transaction["sender"])
         if transaction["recipient"] not in self.tempAccount:
             self.tempAccount.append(transaction["recipient"])
-        
+        if transaction["sender"] not in self.account:
+            self.account.append(transaction["sender"])
+        if transaction["recipient"] not in self.account:
+            self.account.append(transaction["recipient"])
        
     def register_node(self, address: str) -> None:
         """
@@ -180,6 +184,12 @@ class Blockchain:
             return blockData["block"]
         return None
     
+    def get_block_with_transcation_from_hash(self, mHash):
+        block = self.db.getValue( mHash )
+        if block:
+            return block
+        return None
+
     def get_block_from_index(self, index):
         blockInfo = self.get_block_info_from_index( index )
         if blockInfo:
@@ -257,7 +267,7 @@ class Blockchain:
         
         return True
 
-    def submit_block(self, block):
+    def submit_block(self, block, transaction):
         mHash = util.hash(block)
        
         if "index" not in block:
@@ -267,14 +277,17 @@ class Blockchain:
         if index == 0:
             if self.hash(block) == FOUNDATIONBLOCK_HASH:
                 tran_data = util.getMinerTranscation(util.FOUNDATIONBLOCK_ACCOUNT)
-                self.packagedTransaction.append(tran_data)
+                # self.packagedTransaction.append(tran_data)
+                transaction.append(tran_data)
                 blockData = {
-                    "transactions": self.packagedTransaction,
+                    "transactions": transaction,
                     "block": block
                 }
                 self.db.putJson(FOUNDATIONBLOCK_HASH, blockData) 
-                print("  初始块  :   " )
-                print(self.db.getValue(FOUNDATIONBLOCK_HASH))           
+                # self.account.append(util.FOUNDATIONBLOCK_ACCOUNT)
+                # self.tempAccount.append(util.FOUNDATIONBLOCK_ACCOUNT)
+                # print("  初始块  :   " )
+                # print(self.db.getValue(FOUNDATIONBLOCK_HASH))           
         else :
             beforeBlockInfo = self.db.getValue( "block-" + str(index - 1) )
             if self.isBlockVaild(beforeBlockInfo, block):
@@ -283,6 +296,8 @@ class Blockchain:
                     "transactions": self.packagedTransaction,
                     "block": block
                 }
+                for transaction in self.packagedTransaction:
+                    self.addTransaction(transaction)
                 self.db.putJson(mHash, blockData)
             else :
                 return False
@@ -290,7 +305,7 @@ class Blockchain:
         blockInfoKey = "block-" + str(index)
         blockInfo = self.db.getValue( blockInfoKey )
         
-        if not blockInfo:
+        if not blockInfo:           #
             blockInfo = {
                 "index": index,
                 "curBlock": mHash,
@@ -303,14 +318,14 @@ class Blockchain:
         self.db.putJson(blockInfoKey, blockInfo)
         self.index += 1
 
-        util.output_all_info()
-        util.updateAllAccount(self.tempAccount)
+        # util.output_all_info()
+        # util.updateAllAccount(self.tempAccount)
         
-        self.tempAccount = []
-        for transcation in self.transactionList:
-            if transcation in self.packagedTransaction:
-                self.tempAccount.remove(transcation)
-        self.packagedTransaction = []
+        # self.tempAccount = []
+        # for transcation in self.transactionList:
+        #     if transcation in self.packagedTransaction:
+        #         self.tempAccount.remove(transcation)
+        # self.packagedTransaction = []
         return True
 
     def submit_global_block(self, block): 
@@ -428,6 +443,8 @@ class Blockchain:
             util.updateAccount(packagedTran)
             if packagedTran["recipient"] not in self.tempAccount:
                 self.tempAccount.append(packagedTran["recipient"])
+            if packagedTran["recipient"] not in self.account:
+                self.account.append(packagedTran["recipient"]) 
         print(self.packagedTransaction)
         block = {
             "id": self.id,
