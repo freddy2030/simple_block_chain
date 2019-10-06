@@ -56,6 +56,14 @@ def test():
     print(g.a)
     return "haha"
 
+@app.route('/get_index', methods=["GET"])
+def get_index():
+    response = {
+        "index": blockchain.index,
+        "gindex": blockchain.globalchainindex
+    }
+    return jsonify(response), 200
+
 @app.route('/getLastHash', methods=['GET'])
 def get_last_hash(): 
     response = {
@@ -172,7 +180,7 @@ def mine():
         print("###############################")
         print(blockData)
         for host in pinChain[blockchain.id]:
-            requests.post("http://%s/submitBlock" % pinChain[pinName][0], data = blockData)
+            requests.post("http://%s/submitBlock" % host, data = blockData)
    
     return jsonify(response), 200
 
@@ -268,7 +276,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    config = json.load(open('./config/' + args.config+'.json', 'r'))
+    config = json.load(open('./config/config.json', 'r'))
     ip = config['ip']
     port = config['port']
     # print("1111111111111111111")

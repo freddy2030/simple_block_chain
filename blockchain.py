@@ -7,6 +7,7 @@ from uuid import uuid4
 import util
 import requests
 import transaction as settingTran
+
 # from flask import Flask, jsonify, request, g, Flask,session
 
 from leveldbapi import mleveldb
@@ -81,7 +82,58 @@ def initBlockChain(self):
                     print("this id is not a sha256 string, please input again")
 
 def updateBlock(self):
-    pass
+    pinChain = json.load(open('./config/pinChain.json', 'r'))
+    nodeList = pinChain[self.id]
+    maxIndex = self.index
+    print("@89+++++++++++++++++++++++++++++++")
+    print(maxIndex)
+    longNode = ""
+    for node in nodeList:
+        print("@88##########################")
+        print(node)
+        try: 
+            res = requests.get("http://%s/get_index" % node)
+            data = json.loads(str(res.content,"utf-8"))
+            if data["index"] and data["index"] > maxIndex:
+                maxIndex = data["index"]
+                longNode = node
+            # print(data)
+            # if index > maxIndex:
+            #     maxIndex = index
+            #     longNode = node
+            pass
+        except:
+            print("node can not connect")
+            pass
+    if longNode != "":
+        res = requests.get("http://%s/get_all_info" % longNode)
+        data = json.loads(str(res.content,"utf-8"))
+        for i in range(1, maxIndex + 1):
+            blockData = data["block-" + str(i)] 
+            mHash = blockData["curBlock"]
+            blockTran = blockData[mHash]
+          
+            print(blockTran)
+            self.submit_block(blockTran["block"], blockTran["transactions"])
+            blockInfoKey = "block-" + str(i)
+    
+            # blockInfo = {
+            #     "index": index,
+            #     "curBlock": mHash,
+            #     "blockpool": [ mHash ]
+            # }
+            blockData.pop(mHash)
+            self.db.putJson(blockInfoKey, blockData)
+        
+        
+
+        self.index = maxIndex
+        # settingTran.resetBalance(self)
+        print(data)
+    
+    self.state = "work"
+       
+
 
 class Blockchain:
     def __init__(self, db):
@@ -588,7 +640,7 @@ class Blockchain:
 
 blockchain = Blockchain( mleveldb ) 
 
-a = blockchain.new_block(1, time(), [], previous_hash='1', proof=100, gPointers={"1":1}, gIndex=1, previous_g_hash="1")#{"A":{"index":1,"hash":"233333"}}
+# a = blockchain.new_block(1, time(), [], previous_hash='1', proof=100, gPointers={"1":1}, gIndex=1, previous_g_hash="1")#{"A":{"index":1,"hash":"233333"}}
 # blockchain.submit_global_block(a)
 # print(a)
 # blockchain.submit_block(a)
@@ -596,7 +648,7 @@ a = blockchain.new_block(1, time(), [], previous_hash='1', proof=100, gPointers=
 # print(blockchain.get_block_from_hash("2dcca01ab24e111bf8b006231c250a9e07e30c1df47ece8ba0defb15ce4075a9"))
 # print(blockchain.get_gblock_from_index(1))
 
-a = {"a":1}
+# a = {"a":1}
 # blockchain.test(a)
 # print(blockchain.get_all_gblock_from_index(1))
 # print(blockchain.get_block_from_index(1))
