@@ -41,6 +41,11 @@ def hello_world():
     #     session['blockchain'] = Blockchain(levevdbapi.LevelDB())
     # g.a = "111"
     # session["a"] = {"a":1}
+    payload = {
+        "a":1111
+    }
+    # requests.post("http://localhost:5000/submitBlock", data = payload)
+
     return 'Hello, this is your first blockchain!' 
 
 @app.route('/test')
@@ -82,6 +87,8 @@ def get_all_info():
     return jsonify(blockList), 200
 @app.route('/mine', methods=['GET'])
 def mine():
+    if blockchain.state == "update":
+        return "updateing", 200
     # 给工作量证明的节点提供奖励.
     # 发送者为 "0" 表明是新挖出的币
     # blockchain.new_transaction(
@@ -115,9 +122,9 @@ def mine():
     block_hash = blockchain.get_hash_block_proof(block_tmp, proof)
 
     # 生成正式区块
-    
+    pinChain = json.load(open('./config/pinChain.json', 'r'))
     if block_hash[:4] == "0000000":
-        pinChain = json.load(open('./config/pinChain.json', 'r'))
+        # pinChain = json.load(open('./config/pinChain.json', 'r'))
         gPointer = []
         for pinName in pinChain:
             mhash = requests.get("http://%s/getLastHash" % pinChain[pinName][0])
@@ -159,10 +166,13 @@ def mine():
         if len(blockchain.transactionList) == 0:
             print("11111")
             blockchain.transactionList.append(util.getMinerTranscation("776b95dc71eff9c4ecf5762c46acebdad73e73de"))
-        blockchain.submit_block(block, blockchain.transactionList)
+        blockData = blockchain.submit_block(block, blockchain.transactionList)
         blockchain.transactionList.clear()
         blockchain.transactionList.append(util.getMinerTranscation("776b95dc71eff9c4ecf5762c46acebdad73e73de"))
-    
+        print("###############################")
+        print(blockData)
+        for host in pinChain[blockchain.id]:
+            requests.post("http://%s/submitBlock" % pinChain[pinName][0], data = blockData)
    
     return jsonify(response), 200
 
@@ -178,6 +188,17 @@ def addGlobalBlock():
         "message": gblock
     }
     return jsonify(response), 200
+
+
+@app.route("/submitBlock", methods=["POST"])
+def addBlock():
+    if blockchain.state == "update":
+        return "updateing", 200
+    blockData = request.values.to_dict()
+    blockchain.submit_block(blockData["block"], blockData["transactions"])
+    # gblock = json.loads(values.decode('utf-8'))
+    # print(block)
+    return "ok", 200
 
 @app.route('/transactions/new', methods=['POST'])
 def new_transaction():

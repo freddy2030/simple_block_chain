@@ -80,9 +80,13 @@ def initBlockChain(self):
                 else :
                     print("this id is not a sha256 string, please input again")
 
+def updateBlock(self):
+    pass
+
 class Blockchain:
     def __init__(self, db):
         self.db = db
+        self.state = "update"
         # self.current_transactions = []
         # self.chain = []
         # self.globalchain = []
@@ -96,6 +100,7 @@ class Blockchain:
         self.account = []
 
         initBlockChain(self)
+        updateBlock(self)
         # 创建创世块
         # self.new_block(1, time(), self.current_transactions,
         #                previous_hash='1', proof=100)
@@ -243,7 +248,10 @@ class Blockchain:
 
     def submit_block(self, block, transaction):
         mHash = util.hash(block)
-       
+        
+        if self.db.getValue(mHash):
+            return False
+
         if "index" not in block:
             return False
         index = block['index']
@@ -302,7 +310,7 @@ class Blockchain:
         #         self.tempAccount.remove(transcation)
         # self.packagedTransaction = []
         settingTran.resetBalance(self)
-        return True
+        return blockData
 
     def submit_global_block(self, block): 
         # self.db.putJson(mHash, block)
