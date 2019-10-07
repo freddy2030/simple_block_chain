@@ -367,5 +367,15 @@ def submitGBlockInfo(self, block, gpointer):
     self.db.putJson(blockInfoKey, blockInfo)
     self.globalchainindex += 1
 
-    
+def getGpointer(self, timeStamp):   #return blockhash
+    curTime = 0
+    curHash = ""
+    i = 0
+    while 1:
+        block = self.get_block_from_index(i)
+        if not block:
+            break    
+        time = block["timestamp"]     
+        if time <     
+    pass   
 # a = "13b2cc6cc00f32dfc9f814e9a1759c202d12d7c1f55128cd1a9df14c84d983df"
