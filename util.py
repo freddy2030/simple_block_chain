@@ -376,6 +376,9 @@ def getGpointer(self, timeStamp):   #return blockhash
         if not block:
             break    
         time = block["timestamp"]     
-        if time <     
+        if time < timeStamp:
+            curTime = time
+            
+
     pass   
 # a = "13b2cc6cc00f32dfc9f814e9a1759c202d12d7c1f55128cd1a9df14c84d983df"
