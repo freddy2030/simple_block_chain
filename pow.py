@@ -93,6 +93,16 @@ def get_all_info():
         blockList["block-"+str(i)] = blockInfo
         i+=1
     return jsonify(blockList), 200
+
+@app.route('/get_info', methods=['GET'])
+def getInfo():
+    response = {
+        "index" : blockchain.index,
+        "gindex" : blockchain.globalchainindex,
+        'transaction': blockchain.transactionList
+    }
+    return jsonify(response), 200
+
 @app.route('/mine', methods=['GET'])
 def mine():
     if blockchain.state == "update":
@@ -131,78 +141,94 @@ def mine():
 
     # 生成正式区块
     pinChain = json.load(open('./config/pinChain.json', 'r'))
-    if block_hash[:4] == "0000000":
+ 
         # pinChain = json.load(open('./config/pinChain.json', 'r'))
-        gPointer = []
-        for pinName in pinChain:
-            mhash = requests.get("http://%s/getLastHash" % pinChain[pinName][0])
-            if mhash:
-                # print(mhash.json()['hash'])
-                gPointer.append(mhash.json()['hash'])
+        # gPointer = []
+        # for pinName in pinChain:
+        #     mhash = requests.get("http://%s/getLastHash" % pinChain[pinName][0])
+        #     if mhash:
+        #         # print(mhash.json()['hash'])
+        #         gPointer.append(mhash.json()['hash'])
     
         # print("xhxhxhxhxh",gPointer)
-        block = blockchain.new_block(index, timestamp, current_transactions,
-                                 previous_hash, proof, None)
-        payload = json.dumps({"block":block})
-        for pinName in pinChain:
-            requests.post("http://%s/addGlobalBlock" % pinChain[pinName][0], data = payload)
+        # block = blockchain.new_block(index, timestamp, current_transactions,
+        #                          previous_hash, previous_g_hash, gIndex=gindex)
+        # payload = json.dumps({"block":block})
+        # for pinName in pinChain:
+        #     requests.post("http://%s/addGlobalBlock" % pinChain[pinName][0], data = payload)
 
-        blockchain.submit_global_block( block )
+
         # blockchain.globalchainindex += 1
-        response = {
-            'message': "New Global Block",
-            'index': block['index'],
-            'hash': block_hash,
-            'transactions': block['transactions'],
-            'proof': block['proof'],
-            'previous_hash': block['previous_hash'],
-            'gPointer': gPointer,
-            'gindex': blockchain.globalchainindex
-        }
-    else :
-        block = blockchain.new_block(index, timestamp, current_transactions,
-                                 previous_hash, proof, previous_g_hash, gIndex=gindex)
-        print(block)
-        response = {
-            'message': "New Block Forged",
-            'index': block['index'],
-            'hash': block_hash,
-            'transactions': block['transactions'],
-            'proof': block['proof'],
-            'previous_hash': block['previous_hash'],
-        }
-        if len(blockchain.transactionList) == 0:
-            print("11111")
-            blockchain.transactionList.append(util.getMinerTranscation("776b95dc71eff9c4ecf5762c46acebdad73e73de"))
-        blockData = blockchain.submit_block(block, blockchain.transactionList)
-        blockchain.transactionList.clear()
-        blockchain.transactionList.append(util.getMinerTranscation("776b95dc71eff9c4ecf5762c46acebdad73e73de"))
-        print("###############################")
-        print(blockData)
-        for host in pinChain[blockchain.id]:
-            requests.post("http://%s/submitBlock" % host, data = blockData)
    
+    
+    block = blockchain.new_block(index, timestamp, current_transactions,
+                                previous_hash, proof, previous_g_hash, gIndex=gindex)
+    print(block)
+    response = {
+        'message': "New Block Forged",
+        'index': block['index'],
+        'hash': block_hash,
+        'transactions': block['transactions'],
+        'proof': block['proof'],
+        'previous_hash': block['previous_hash'],
+    }
+    if len(blockchain.transactionList) == 0:
+        print("11111")
+        blockchain.transactionList.append(util.getMinerTranscation("776b95dc71eff9c4ecf5762c46acebdad73e73de"))
+    blockData = blockchain.submit_block(block, blockchain.transactionList)
+    blockchain.transactionList.clear()
+    blockchain.transactionList.append(util.getMinerTranscation("776b95dc71eff9c4ecf5762c46acebdad73e73de"))
+    print("###############################")
+    print(blockData)
+    for host in pinChain[blockchain.id]:
+        try:
+            requests.post("http://%s/submitBlock" % host, json = blockData)
+        except :
+            pass
+          
+    if int(block_hash[:4],16) <= 8:
+        response["message"] = "get global"
+        # util.submitGBlockInfo(blockchain, block, [])
+        blockData["gpointer"] = []
+        print("@193-------------------------------------")
+        print(blockData)
+        for chain in pinChain:
+            for host in pinChain[chain]: 
+                print(host)
+                try:
+                    requests.post("http://%s/addGlobalBlock" %host, json = blockData)
+                except:
+                    print("fail ----------0")
+                    pass
+       
+
     return jsonify(response), 200
 
 @app.route('/addGlobalBlock', methods=['POST'])
 def addGlobalBlock():
-    values = request.data
-    gblock = json.loads(values.decode('utf-8'))['block']
-    print(gblock)
-    blockchain.globalchain.append(gblock)
-    if(gblock['gindex'] > blockchain.globalchainindex):
-        blockchain.globalchainindex = gblock['gindex']
-    response = {
-        "message": gblock
-    }
-    return jsonify(response), 200
+    blockData = request.get_json()
+    print("---------------------------------@200")
+    print(blockData["gpointer"])
+    util.submitGBlockInfo(blockchain, blockData["block"], blockData["gpointer"])
+    return "ok", 200
 
+@app.route("/get_g_block", methods=["GET"])
+def getGBlock():
+    i = 0
+    blockList = {}
+    while( i <= blockchain.globalchainindex):
+        blockInfo = blockchain.get_gblock_info_from_index(str(i))
+        for blockHash in blockInfo["blockpool"]:
+            blockInfo[blockHash] = blockchain.get_block_with_transcation_from_hash(blockHash)
+        blockList["gblock-"+str(i)] = blockInfo
+        i+=1
+    return jsonify(blockList), 200
 
 @app.route("/submitBlock", methods=["POST"])
 def addBlock():
     if blockchain.state == "update":
         return "updateing", 200
-    blockData = request.values.to_dict()
+    blockData = request.get_json()
     blockchain.submit_block(blockData["block"], blockData["transactions"])
     # gblock = json.loads(values.decode('utf-8'))
     # print(block)
@@ -283,4 +309,4 @@ if __name__ == '__main__':
     # db = leveldb.LevelDB('./db')
     # app.app_context().push()
     # app.config['SECRET_KEY'] = os.urandom(24)
-    app.run(host=ip, port=port,debug=True)
+    app.run(host=ip, port=port,debug=False)

@@ -340,7 +340,32 @@ def hash(block):
     block_string = json.dumps(block, sort_keys=True).encode()
     return hashlib.sha256(block_string).hexdigest()
 
+def submitGBlockInfo(self, block, gpointer):
+    mHash = hash(block)
+    index = block["gindex"]
+    blockInfoKey = "gblock-" + str(index)
+    blockInfo = self.db.getValue( blockInfoKey )
 
+    if not blockInfo:           #
+        blockInfo = {
+            "index": index,
+            "curBlock": mHash,
+            "blockpool": [ mHash ]
+        }
+    else:
+        if mHash not in blockInfo["blockpool"]:
+            blockInfo["blockpool"].append( mHash )
+    block = self.db.getValue(mHash)
+    if block:
+        block["gpointer"] = gpointer
+    else:
+        block = {
+                    "gpointer": gpointer,
+                    "block": block
+                }
+    self.db.putJson(mHash, block)
+    self.db.putJson(blockInfoKey, blockInfo)
+    self.globalchainindex += 1
 
     
 # a = "13b2cc6cc00f32dfc9f814e9a1759c202d12d7c1f55128cd1a9df14c84d983df"

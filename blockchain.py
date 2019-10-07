@@ -38,6 +38,9 @@ def addFoundationBlock(self):
         print("not exit")
         self.submit_block(foundationBlock, [])
     
+    if (self.get_gblock_info_from_index(0) == None):
+        util.submitGBlockInfo(self, foundationBlock, [])
+        pass
     # if (self.get_cur_gblock_from_index(0) == None):
     #     self.submit_global_block(foundationBlock)
 
@@ -214,7 +217,7 @@ class Blockchain:
         if blockData:
             return blockData["block"]
         return None
-    
+
     def get_block_with_transcation_from_hash(self, mHash):
         block = self.db.getValue( mHash )
         if block:
@@ -223,6 +226,14 @@ class Blockchain:
 
     def get_block_from_index(self, index):
         blockInfo = self.get_block_info_from_index( index )
+        if blockInfo:
+            mHash = blockInfo["curBlock"]
+            block = self.get_block_from_hash(mHash)
+            return block
+        return None
+    
+    def get_g_block_from_index(self, index):
+        blockInfo = self.get_gblock_info_from_index( index )
         if blockInfo:
             mHash = blockInfo["curBlock"]
             block = self.get_block_from_hash(mHash)
